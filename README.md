@@ -14,6 +14,8 @@ Live: https://shares-analytics.vercel.app
 - **`index.html`** — landing page: hero, ticker tape (real last closes & 1-day moves), risk/return scatter of all 10 model books vs OBX (click a dot to open the model), sortable comparison table, and the model universe (click a row for the cross-model view).
 - **`asset.html?id=<nordnet-id>`** — instrument view for **any of the ~1,170 searchable instruments**. Shares: KPIs, real performance vs OBX, correlations, Nordnet owner count, deep link to Nordnet, and — for model-universe members — **how every model treats the share** (held/excluded, weight, rank). Funds: Nordnet return summary (1M–10Y), effective fee, Morningstar rating, KIID risk, AUM, SFDR/ESG, manager.
 - **header search (every page)** — type a ticker or name; matches rank by relevance then Nordnet owner count.
+- **`compare.html?a=…&b=…`** — any two model books side by side: paired KPIs, both real performance paths vs the benchmark, per-holding weight diff.
+- **`portfolio.html` (◈ My Book)** — your actual holdings: add via search or paste a Nordnet CSV export (matched by ISIN). NOK valuation via live FX, 1-day P&L, estimated volatility, real backtest vs benchmark, and a BUY/SELL diff against any of the ten models. Stored in localStorage — nothing leaves the browser.
 - **`models/01…10-*.html`** — one page per model, each running its *own* construction logic:
 
 | # | Model | Mode | # | Model | Mode |
@@ -72,7 +74,7 @@ python3 -m http.server
 
 ### Refresh
 
-Automatic: `.github/workflows/refresh-data.yml` runs nightly (Tue–Sat 03:30 UTC), commits a new `assets/data.js` when markets moved, and Vercel auto-deploys the push.
+Automatic: `.github/workflows/refresh-data.yml` runs nightly (Tue–Sat 03:30 UTC): fetch → rate-limit repair passes → **quality gate** (`scripts/validate_data.py` — refuses to commit if universes are missing/thin, returns non-finite, or shards invalid). On pass it commits and Vercel auto-deploys.
 
 Manual:
 
