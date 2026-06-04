@@ -158,7 +158,7 @@
     {t:'DNB.OL',  dir:'OVER', f:1.2, txt:'Resilient NII, strong capital returns'},
     {t:'EQNR.OL', dir:'UNDER',f:0.6, txt:'Softer oil & gas price deck −2.0%'},
     {t:'TEL.OL',  dir:'UNDER',f:0.75,txt:'Mature telecom growth headwind'},
-  ];
+  ].filter(v=>MAP[v.t]); // only views on names actually in the model universe
   function bl(s){
     const c = (s.conf ?? 40)/100;
     const eqm = capw(RISKY);
@@ -182,14 +182,19 @@
   }
 
   // HRP clusters (static)
-  const HRP_CLUSTERS = [
-    {name:'Energy / Offshore', members:['EQNR.OL','AKRBP.OL','FRO.OL','SUBC.OL']},
-    {name:'Financials',        members:['DNB.OL','STB.OL','GJF.OL','ENTRA.OL']},
-    {name:'Defensive Consumer',members:['TEL.OL','MOWI.OL','SALM.OL','ORK.OL','VEI.OL']},
-    {name:'Industrials / Mat.',members:['NHY.OL','YAR.OL','KOG.OL','TOM.OL']},
-    {name:'Tech / Renewables', members:['NOD.OL','ATEA.OL','SCATC.OL']},
-    {name:'Global Diversifiers',members:['EUNL.DE','EUNH.DE']},
-  ];
+  // clusters derived from sector classification (universe is selected dynamically)
+  const HRP_CLUSTERS = (function(){
+    const DIVERS = ['Global Equity','Fixed Income'];
+    const groups = {};
+    RISKY.forEach(a=>{
+      const k = DIVERS.includes(a.sector) ? 'Global Diversifiers' : a.sector;
+      (groups[k] = groups[k] || []).push(a.t);
+    });
+    const out = [], loose = [];
+    Object.entries(groups).forEach(([k, m]) => { m.length >= 2 ? out.push({name:k, members:m}) : loose.push(...m); });
+    if (loose.length) out.push({name:'Other', members:loose});
+    return out;
+  })();
   function hrp(){
     // allocate inverse-cluster-vol across clusters, inverse-vol within (softer than 1/σ²)
     const clVar = HRP_CLUSTERS.map(c=>{

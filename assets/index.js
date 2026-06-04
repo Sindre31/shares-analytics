@@ -43,14 +43,15 @@
           <div class="hero-main">
             <div class="eyebrow">Meridian Portfolio Model Exchange · PMX</div>
             <h1 class="hero-h1">Ten models.<br>One universe.<br><span class="up">The optimal book.</span></h1>
-            <p class="hero-sub">Ten canonical portfolio-construction models — from Markowitz to machine-learning — each run live against ${M.U.length} real instruments tradable on Nordnet Norway: Oslo Børs shares plus UCITS funds, vs the OBX benchmark. Real market data as of ${M.ASOF}. Compare the books, tune any model, or search a share to see how every model treats it.</p>
+            <p class="hero-sub">Ten canonical portfolio-construction models — from Markowitz to machine-learning — run live on the ${M.U.length} most-traded Oslo Børs names plus UCITS diversifiers, vs the OBX benchmark. Every instrument on Nordnet Norway — ${(window.MERIDIAN_CAT || []).length.toLocaleString('en-US')} shares and funds — is searchable from the box above. Real market data as of ${M.ASOF}.</p>
             <div class="hero-cta">
               <a class="btn primary" href="#directory">▸ BROWSE MODELS</a>
               <a class="btn" href="#frontier">▸ RISK / RETURN MAP</a>
             </div>
           </div>
           <div class="hero-side">
-            <div class="hs-row"><span class="k">UNIVERSE</span><span class="v mono">${M.U.length} ASSETS</span></div>
+            <div class="hs-row"><span class="k">MODEL UNIVERSE</span><span class="v mono">${M.U.length} ASSETS</span></div>
+            <div class="hs-row"><span class="k">SEARCHABLE</span><span class="v mono">${(window.MERIDIAN_CAT || []).length.toLocaleString('en-US')}</span></div>
             <div class="hs-row"><span class="k">MODELS</span><span class="v mono">${M.MODELS.length}</span></div>
             <div class="hs-row"><span class="k">BENCHMARK</span><span class="v mono">${M.BENCH.code} · ${M.BENCH.er.toFixed(1)}%</span></div>
             <div class="hs-row"><span class="k">RISK-FREE</span><span class="v mono">${M.RF.toFixed(2)}%</span></div>
@@ -83,7 +84,7 @@
           <div class="panel-body tight"><div id="compTable"></div></div>
         </div>
 
-        <div class="section-bar mt24"><h2>INVESTABLE UNIVERSE</h2><span class="cat-tag">${M.U.length} CONSTITUENTS · TRADABLE ON NORDNET NO · CLICK A ROW FOR CROSS-MODEL VIEW</span><div class="hr"></div></div>
+        <div class="section-bar mt24"><h2>MODEL UNIVERSE</h2><span class="cat-tag">${M.U.length} MOST-TRADED · ${((window.MERIDIAN_CAT || []).length - M.U.length).toLocaleString('en-US')} MORE VIA SEARCH · CLICK A ROW FOR CROSS-MODEL VIEW</span><div class="hr"></div></div>
         <div class="panel">
           <div class="panel-body tight"><div id="uniTable"></div></div>
         </div>

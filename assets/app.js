@@ -9,9 +9,14 @@
   /* ---------- path helpers ---------- */
   const fileFor = m => `${m.no}-${m.id}.html`;
   function paths(ctx) {
-    return ctx === 'index'
-      ? { index: 'index.html', model: m => `models/${fileFor(m)}`, asset: t => `asset.html?t=${encodeURIComponent(t)}` }
-      : { index: '../index.html', model: m => fileFor(m), asset: t => `../asset.html?t=${encodeURIComponent(t)}` };
+    const pre = ctx === 'index' ? '' : '../';
+    return {
+      index: pre + 'index.html',
+      model: m => ctx === 'index' ? `models/${fileFor(m)}` : fileFor(m),
+      asset: t => `${pre}asset.html?t=${encodeURIComponent(t)}`,   // by yahoo ticker (model universe)
+      assetId: id => `${pre}asset.html?id=${encodeURIComponent(id)}`, // by Nordnet id (full catalog)
+      data: pre + 'data/i/',
+    };
   }
 
   /* ---------- real last close & 1-day move (from data snapshot) ---------- */
@@ -59,42 +64,59 @@
 
   /* ---------- FOOTER ---------- */
   function footer(extra) {
+    const counts = (window.MERIDIAN_DATA || {}).counts || {};
     return `
     <footer class="term-foot">
       <div class="fseg"><span class="live">●</span> LIVE FEED <span class="blink">_</span></div>
-      <div class="fseg">UNIVERSE: ${M.U.length} ASSETS</div>
+      <div class="fseg">MODEL UNIVERSE: ${M.U.length}</div>
+      <div class="fseg">CATALOG: ${counts.shares || '—'} AKSJER · ${counts.funds || '—'} FOND</div>
       <div class="fseg">MODELS: ${M.MODELS.length}</div>
       <div class="fseg">${extra || 'DATA: REAL · AS OF ' + M.ASOF}</div>
       <div class="fseg" style="margin-left:auto">MERIDIAN PMX v2.4 · © 2026</div>
     </footer>`;
   }
 
-  /* ---------- global share search ---------- */
+  /* ---------- global search over the full Nordnet catalog ---------- */
   function initSearch(ctx) {
     const P = paths(ctx);
+    const CAT = window.MERIDIAN_CAT || [];
     const inp = document.getElementById('globalSearch'), dd = document.getElementById('searchDD');
     if (!inp || !dd) return;
     let items = [];
+    function score(c, s) {
+      const sym = (c.sym || '').toLowerCase(), nm = (c.name || '').toLowerCase();
+      if (sym === s) return 0;
+      if (sym.startsWith(s)) return 1;
+      if (nm.startsWith(s)) return 2;
+      if (sym.includes(s)) return 3;
+      if (nm.includes(s)) return 4;
+      return 99;
+    }
     function close() { dd.classList.remove('open'); dd.innerHTML = ''; items = []; }
     function open(q) {
       const s = q.trim().toLowerCase();
       if (!s) return close();
-      items = M.U.filter(a => a.t.toLowerCase().includes(s) || a.name.toLowerCase().includes(s)).slice(0, 8);
-      if (!items.length) { dd.innerHTML = `<div class="sr mute">NO MATCH IN UNIVERSE</div>`; dd.classList.add('open'); return; }
-      dd.innerHTML = items.map(a => `
-        <a class="sr" href="${P.asset(a.t)}">
-          <span class="sym-chip" style="background:${a.color}"></span>
-          <span class="mono">${esc(a.t)}</span>
-          <span class="srn">${esc(a.name)}</span>
-          <span class="cat-tag" style="margin-left:auto">${esc(a.sector)}</span>
-          <span class="mono ${a.chg >= 0 ? 'up' : 'down'}" style="width:62px;text-align:right">${a.chg >= 0 ? '▲' : '▼'} ${Math.abs(a.chg).toFixed(2)}%</span>
-        </a>`).join('');
+      items = CAT.map(c => ({ c, sc: score(c, s) })).filter(x => x.sc < 99)
+        .sort((a, b) => a.sc - b.sc || (b.c.owners || 0) - (a.c.owners || 0))
+        .slice(0, 9).map(x => x.c);
+      if (!items.length) { dd.innerHTML = `<div class="sr mute">NO MATCH · ${CAT.length} INSTRUMENTS</div>`; dd.classList.add('open'); return; }
+      dd.innerHTML = items.map(c => {
+        const u = c.yt && M.byT(c.yt);
+        const chg = c.chg == null ? null : c.chg;
+        return `<a class="sr" href="${P.assetId(c.id)}">
+          <span class="sym-chip" style="background:${u ? u.color : (c.type === 'FND' ? 'var(--info)' : 'var(--fg-mute)')}"></span>
+          <span class="mono" style="min-width:46px">${esc(c.sym || (c.type === 'FND' ? 'FOND' : ''))}</span>
+          <span class="srn">${esc(c.name)}</span>
+          <span class="cat-tag" style="margin-left:auto;white-space:nowrap">${esc(c.cat || '')}</span>
+          <span class="mono ${chg >= 0 ? 'up' : 'down'}" style="width:62px;text-align:right">${chg == null ? '—' : (chg >= 0 ? '▲ ' : '▼ ') + Math.abs(chg).toFixed(2) + '%'}</span>
+        </a>`;
+      }).join('');
       dd.classList.add('open');
     }
     inp.addEventListener('input', () => open(inp.value));
     inp.addEventListener('focus', () => open(inp.value));
     inp.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && items.length) location.href = P.asset(items[0].t);
+      if (e.key === 'Enter' && items.length) location.href = P.assetId(items[0].id);
       if (e.key === 'Escape') { inp.blur(); close(); }
     });
     document.addEventListener('click', e => { if (!e.target.closest('.th-search')) close(); });
