@@ -21,8 +21,8 @@
     (m.controls || []).forEach(c => state[c.k] = c.def);
     const r = m.compute(state);
     const mt = M.metrics(r.weights);
-    const path = C.simPath(36, mt.er, mt.vol, m.seed);
-    const bench = C.simPath(36, M.BENCH.er, M.BENCH.vol, 424242);
+    const path = M.pathFor(r.weights, 36);   // real 3y backtest
+    const bench = M.benchPath(36);           // real benchmark (SPY)
     const ret3 = (path[path.length - 1] / 100 - 1) * 100;
     const mdd = C.maxDrawdown(path);
     return { m, mt, path, ret3, mdd, hold: r.weights.length, alpha: ret3 - (bench[bench.length - 1] / 100 - 1) * 100,
@@ -43,7 +43,7 @@
           <div class="hero-main">
             <div class="eyebrow">Meridian Portfolio Model Exchange · PMX</div>
             <h1 class="hero-h1">Ten models.<br>One universe.<br><span class="up">The optimal book.</span></h1>
-            <p class="hero-sub">Ten canonical portfolio-construction models — from Markowitz to machine-learning — each run live against a single synthetic universe of ${M.U.length} assets. Compare the books they build, then open any model to tune it.</p>
+            <p class="hero-sub">Ten canonical portfolio-construction models — from Markowitz to machine-learning — each run live against a single universe of ${M.U.length} real assets, on real market data as of ${M.ASOF}. Compare the books they build, then open any model to tune it.</p>
             <div class="hero-cta">
               <a class="btn primary" href="#directory">▸ BROWSE MODELS</a>
               <a class="btn" href="#frontier">▸ RISK / RETURN MAP</a>
@@ -56,7 +56,7 @@
             <div class="hs-row"><span class="k">RISK-FREE</span><span class="v mono">${M.RF.toFixed(2)}%</span></div>
             <div class="hs-row"><span class="k">REBAL</span><span class="v mono">MONTHLY</span></div>
             <div class="hs-row"><span class="k">AS OF</span><span class="v mono" id="hs-date"></span></div>
-            <div class="hs-foot mono">● SYNTHETIC DATA — ILLUSTRATIVE ONLY</div>
+            <div class="hs-foot mono">● REAL MARKET DATA · NOT INVESTMENT ADVICE</div>
           </div>
         </div>
       </div>
@@ -89,7 +89,7 @@
         </div>
       </div>`;
 
-    document.getElementById('hs-date').textContent = new Date().toISOString().slice(0, 10);
+    document.getElementById('hs-date').textContent = M.ASOF;
 
     // category legend
     document.getElementById('catLegend').innerHTML = Object.entries(CAT_COLOR).map(([k, v]) =>

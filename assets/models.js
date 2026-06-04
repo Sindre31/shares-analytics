@@ -1,10 +1,12 @@
 /* ============================================================
    models.js — universe, 10 portfolio models, weight logic, info
-   All data is illustrative / synthetic. Tickers are fictional.
+   Real market data — snapshot lives in assets/data.js.
    ============================================================ */
 (function (g) {
-  const RF = 4.2; // risk-free %
-  const BENCH = { code: 'MGX', name: 'Meridian Global 500', er: 8.4, vol: 15.5 };
+  const D = g.MERIDIAN_DATA;
+  const RF = D.rf; // risk-free % (13-week T-bill yield)
+  const BENCH = { code: D.bench.code, ticker: D.bench.ticker, name: D.bench.name,
+                  er: D.bench.er, vol: D.bench.vol, px: D.bench.px, chg: D.bench.chg };
 
   // categorical palette (oklch, dark-friendly)
   const PAL = [
@@ -16,39 +18,45 @@
     'oklch(0.58 0.05 250)', 'oklch(0.50 0.02 250)'
   ];
 
-  // universe: er=exp ann return %, vol=ann vol %, beta, mom=12-1m %, pe, pb, div%, mcap $bn, qual 0-1
-  const U = [
-    ['NVCX','Novacore Semiconductors','Technology',16.5,34,1.55,41,38,12,0.3,1850,0.86],
-    ['ARBR','Arbor Cloud Systems',     'Technology',14.0,30,1.35,28,52, 9,0.0, 720,0.71],
-    ['MAPL','Maple Platform Holdings',  'Technology',11.5,22,1.10,19,29, 8,0.6,2400,0.90],
-    ['HLIX','Helix Biosciences',        'Healthcare',13.5,38,1.05,12,24, 5,0.0, 180,0.55],
-    ['ORCN','Orion Industrials',        'Industrials', 9.5,21,1.05,16,19,3.2,1.5,240,0.68],
-    ['VERD','Verde Clean Energy',       'Energy',     12.0,33,1.25,-6,31,3.5,0.4, 95,0.49],
-    ['KRNS','Kearns Consumer Brands',   'Staples',     7.0,13,0.55, 6,21, 5,2.8,310,0.80],
-    ['FERO','Ferro Energy Partners',    'Energy',      8.5,28,1.15, 9, 9,1.4,4.6,280,0.60],
-    ['BNKX','Banyan Financial Group',   'Financials',  9.0,24,1.20,14,11,1.1,3.4,360,0.62],
-    ['MDTL','Meridian Health Devices',  'Healthcare',  8.8,17,0.75, 8,18, 4,1.8,430,0.78],
-    ['TLRC','Talaris Communications',   'Telecom',     6.5,15,0.65, 2,12,1.6,5.2,160,0.58],
-    ['AURM','Aurum Metals & Mining',    'Materials',   6.0,19,0.25,22,16,2.1,1.2,120,0.50],
-    ['PRTY','Parity REIT Trust',        'Real Estate', 7.8,20,0.85, 4,28,1.9,4.0,140,0.57],
-    ['UTLX','Utilix Power & Water',     'Utilities',   6.2,12,0.40, 7,17,1.7,3.8,200,0.66],
-    ['GLBT','Global ex-US Equity Fund', 'International',8.0,16,0.90,11,14,1.8,2.9,900,0.64],
-    ['AGGF','Aggregate Bond Fund',      'Fixed Income',4.8, 6,0.15, 3, 0, 0,3.6,1200,0.70],
-    ['TBIL','T-Bill 0-3M Fund',         'Cash',        4.2, 1,0.02, 0, 0, 0,4.2, 800,1.00],
-  ].map((r,i)=>({ t:r[0], name:r[1], sector:r[2], er:r[3], vol:r[4], beta:r[5], mom:r[6],
-                  pe:r[7], pb:r[8], div:r[9], mcap:r[10], qual:r[11], color:PAL[i] }));
+  // universe: real assets from the data snapshot (er/vol/beta/mom/pe/pb/div/mcap/qual)
+  const U = D.universe.map((a,i)=>({ ...a, color:PAL[i] }));
 
   const MAP = Object.fromEntries(U.map(a=>[a.t,a]));
   const byT = t => MAP[t];
 
-  // pairwise correlation model (rewards diversification)
-  function rho(a,b){
-    if (a.t===b.t) return 1;
-    if (a.t==='TBIL'||b.t==='TBIL') return 0.0;
-    if (a.t==='AGGF'||b.t==='AGGF') return 0.06;
-    if (a.t==='AURM'||b.t==='AURM') return -0.08;
-    if (a.sector===b.sector) return 0.55;
-    return 0.30;
+  // pairwise correlations — computed from the last 36 real monthly returns
+  const RHO = (function(){
+    const ts = U.map(a=>a.t), n=36;
+    const series = Object.fromEntries(ts.map(t=>[t, D.rets[t].slice(-n)]));
+    const mean = Object.fromEntries(ts.map(t=>[t, series[t].reduce((s,v)=>s+v,0)/n]));
+    const sd = Object.fromEntries(ts.map(t=>{
+      const m=mean[t]; return [t, Math.sqrt(series[t].reduce((s,v)=>s+(v-m)*(v-m),0)/n)||1e-9];
+    }));
+    const R = {};
+    ts.forEach(a=>{ R[a]={}; ts.forEach(b=>{
+      let c=0; for(let k=0;k<n;k++) c+=(series[a][k]-mean[a])*(series[b][k]-mean[b]);
+      R[a][b] = (c/n)/(sd[a]*sd[b]);
+    });});
+    return R;
+  })();
+  function rho(a,b){ return RHO[a.t][b.t]; }
+  const rhoOf = (ta,tb) => RHO[ta][tb];
+
+  /* real growth-of-100 backtest paths (monthly rebalanced) */
+  function pathFor(weights, months){
+    const out=[100]; let idx=100;
+    const T = D.rets[U[0].t].length, start = Math.max(0, T-months);
+    for (let k=start;k<T;k++){
+      let pr=0; weights.forEach(x=>{ pr += x.w * (D.rets[x.t] ? D.rets[x.t][k] : 0); });
+      idx *= (1+pr); out.push(idx);
+    }
+    return out;
+  }
+  function benchPath(months){
+    const out=[100]; let idx=100;
+    const r = D.rets[D.bench.ticker], start = Math.max(0, r.length-months);
+    for (let k=start;k<r.length;k++){ idx *= (1+r[k]); out.push(idx); }
+    return out;
   }
   // portfolio metrics from weights [{t,w}]
   function metrics(weights){
@@ -71,8 +79,8 @@
     const pos = list.filter(x=>x.raw>1e-9); const s=pos.reduce((a,x)=>a+x.raw,0)||1;
     return pos.map(x=>({t:x.t,w:x.raw/s})).sort((a,b)=>b.w-a.w);
   }
-  const RISKY = U.filter(a=>a.t!=='TBIL');
-  const EQUITY = U.filter(a=>!['TBIL','AGGF'].includes(a.t));
+  const RISKY = U.filter(a=>a.t!=='BIL');
+  const EQUITY = U.filter(a=>!['BIL','AGG'].includes(a.t));
   function capw(list){ return norm(list.map(a=>({t:a.t,raw:a.mcap}))); }
 
   /* ---------- model compute functions ---------- */
@@ -94,7 +102,7 @@
   function val(s){ // value: cheapest by composite
     const K = s.k ?? 6;
     const cand = EQUITY.filter(a=>a.pe>0);
-    const zE = z(cand.map(a=>1/a.pe)), zB = z(cand.map(a=>1/a.pb)), zD = z(cand.map(a=>a.div));
+    const zE = z(cand.map(a=>1/a.pe)), zB = z(cand.map(a=>1/Math.max(0.3,a.pb))), zD = z(cand.map(a=>a.div));
     const scored = cand.map((a,i)=>({a, sc: 0.45*zE[i]+0.35*zB[i]+0.20*zD[i]}));
     const top = scored.sort((x,y)=>y.sc-x.sc).slice(0,K);
     const w = norm(top.map(o=>({t:o.a.t, raw: Math.max(0.05, o.sc - top[top.length-1].sc + 0.3)})));
@@ -120,13 +128,15 @@
     const bvol = metrics(base).vol;
     let k = Math.min(1, target/bvol);
     const w = base.map(x=>({t:x.t,w:x.w*k}));
-    const cash = 1-k; if (cash>0.001) w.push({t:'TBIL',w:cash});
+    const cash = 1-k; if (cash>0.001) w.push({t:'BIL',w:cash});
     return { weights:w.sort((a,b)=>b.w-a.w), cash, extras:[{k:'Risk budget',v:'Equal ERC'},{k:'Target σ',v:target.toFixed(1)+'%'},{k:'Invested',v:(k*100).toFixed(0)+'%'}] };
   }
 
   function mvo(s){ // mean-variance utility maximization
     const lam = s.lambda ?? 2.0;
     const w = norm(RISKY.map(a=>({t:a.t, raw: (a.er-RF) - 0.5*lam*(a.vol*a.vol)/100 })));
+    if (!w.length) // no risky asset clears the utility hurdle -> hold T-bills
+      return { weights:[{t:'BIL',w:1}], cash:1, extras:[{k:'Objective',v:'max  μ−½λσ²'},{k:'Risk aversion λ',v:lam.toFixed(1)},{k:'Frontier',v:'All cash — hurdle unmet'}] };
     return { weights:w, extras:[{k:'Objective',v:'max  μ−½λσ²'},{k:'Risk aversion λ',v:lam.toFixed(1)},{k:'Frontier',v:'Tangency tilt'}] };
   }
 
@@ -134,7 +144,7 @@
     const eq = (s.equity ?? 85)/100;
     const mkt = capw(RISKY);
     const w = mkt.map(x=>({t:x.t,w:x.w*eq}));
-    const cash = 1-eq; if (cash>0.001) w.push({t:'TBIL',w:cash});
+    const cash = 1-eq; if (cash>0.001) w.push({t:'BIL',w:cash});
     const mktPrem = (BENCH.er-RF);
     return { weights:w.sort((a,b)=>b.w-a.w), cash, mktPrem,
              extras:[{k:'Market sleeve',v:(eq*100).toFixed(0)+'%'},{k:'Risk-free',v:(cash*100).toFixed(0)+'%'},{k:'Equity risk prem.',v:mktPrem.toFixed(1)+'%'}] };
@@ -142,11 +152,11 @@
 
   // Black-Litterman views (manager tilts)
   const BL_VIEWS = [
-    {t:'NVCX', dir:'OVER', f:1.7, txt:'AI capex cycle → semis outperform +3.0%'},
-    {t:'VERD', dir:'OVER', f:1.5, txt:'Policy tailwind → clean energy re-rates'},
-    {t:'MDTL', dir:'OVER', f:1.2, txt:'Defensive health quality bid'},
-    {t:'FERO', dir:'UNDER',f:0.5, txt:'Oversupply → energy underperforms −2.0%'},
-    {t:'BNKX', dir:'UNDER',f:0.75,txt:'Credit normalization headwind'},
+    {t:'NVDA', dir:'OVER', f:1.7, txt:'AI capex cycle → semis outperform +3.0%'},
+    {t:'CAT',  dir:'OVER', f:1.5, txt:'Infrastructure capex supercycle extends'},
+    {t:'ABT',  dir:'OVER', f:1.2, txt:'Defensive health quality bid'},
+    {t:'XOM',  dir:'UNDER',f:0.5, txt:'Oversupply → energy underperforms −2.0%'},
+    {t:'VZ',   dir:'UNDER',f:0.75,txt:'Wireless price competition headwind'},
   ];
   function bl(s){
     const c = (s.conf ?? 40)/100;
@@ -172,10 +182,10 @@
 
   // HRP clusters (static)
   const HRP_CLUSTERS = [
-    {name:'Growth / Tech', members:['NVCX','ARBR','MAPL','VERD']},
-    {name:'Defensive',     members:['KRNS','MDTL','UTLX','TLRC']},
-    {name:'Cyclical / Value',members:['FERO','BNKX','ORCN','PRTY','HLIX']},
-    {name:'Diversifiers',  members:['AURM','GLBT','AGGF']},
+    {name:'Growth / Tech', members:['NVDA','NOW','MSFT','FSLR']},
+    {name:'Defensive',     members:['PG','ABT','DUK','VZ']},
+    {name:'Cyclical / Value',members:['XOM','JPM','CAT','O','VRTX']},
+    {name:'Diversifiers',  members:['NEM','VXUS','AGG']},
   ];
   function hrp(){
     // allocate inverse-cluster-vol across clusters, inverse-vol within (softer than 1/σ²)
@@ -309,5 +319,6 @@
   ];
 
   g.MERIDIAN = { U, MAP, byT, RISKY, EQUITY, MODELS, RF, BENCH, metrics, PAL,
-                 HRP_CLUSTERS, BL_VIEWS, modelById: id => MODELS.find(m=>m.id===id) };
+                 HRP_CLUSTERS, BL_VIEWS, ASOF: D.asof, pathFor, benchPath, rhoOf,
+                 modelById: id => MODELS.find(m=>m.id===id) };
 })(window);

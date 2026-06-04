@@ -14,18 +14,9 @@
       : { index: '../index.html', model: m => fileFor(m) };
   }
 
-  /* ---------- daily change (deterministic) ---------- */
-  function dayChange(a) {
-    const r = C.rng(C.hashStr(a.t) ^ 0x9e37);
-    const drift = (a.er / 100) / 252;
-    const sigma = (a.vol / 100) / Math.sqrt(252);
-    const z = Math.sqrt(-2 * Math.log(Math.max(1e-9, r()))) * Math.cos(2 * Math.PI * r());
-    return (drift + sigma * z) * 100; // % day move
-  }
-  function lastPx(a) {
-    const r = C.rng(C.hashStr(a.t));
-    return (18 + r() * 480);
-  }
+  /* ---------- real last close & 1-day move (from data snapshot) ---------- */
+  function dayChange(a) { return a.chg; }
+  function lastPx(a) { return a.px; }
 
   /* ---------- HEADER ---------- */
   function header(activeId, ctx) {
@@ -45,7 +36,7 @@
         ${nav}
       </nav>
       <div class="th-right">
-        <div class="th-stat"><span class="k">MGX Index</span><span class="v" id="hs-bench">8,412.6 <span class="up">▲</span></span></div>
+        <div class="th-stat"><span class="k">${M.BENCH.code} · ${M.BENCH.ticker}</span><span class="v" id="hs-bench">${M.BENCH.px.toLocaleString('en-US',{minimumFractionDigits:2})} <span class="${M.BENCH.chg>=0?'up':'down'}">${M.BENCH.chg>=0?'▲':'▼'}</span></span></div>
         <div class="th-stat"><span class="k">Risk-free</span><span class="v">${M.RF.toFixed(2)}%</span></div>
         <div class="th-stat th-clock"><span class="k">Session</span><span class="v" id="hs-clock">––:––:––</span></div>
       </div>
@@ -54,7 +45,7 @@
 
   /* ---------- TICKER ---------- */
   function ticker() {
-    const cells = M.U.filter(a => a.t !== 'TBIL').map(a => {
+    const cells = M.U.filter(a => a.t !== 'BIL').map(a => {
       const ch = dayChange(a), px = lastPx(a);
       const cls = ch >= 0 ? 'up' : 'down', arr = ch >= 0 ? '▲' : '▼';
       return `<span class="tk"><span class="sym">${a.t}</span><span class="px">${px.toFixed(2)}</span><span class="chg ${cls}">${arr} ${Math.abs(ch).toFixed(2)}%</span></span>`;
@@ -69,25 +60,18 @@
       <div class="fseg"><span class="live">●</span> LIVE FEED <span class="blink">_</span></div>
       <div class="fseg">UNIVERSE: ${M.U.length} ASSETS</div>
       <div class="fseg">MODELS: ${M.MODELS.length}</div>
-      <div class="fseg">${extra || 'DATA: SYNTHETIC / ILLUSTRATIVE'}</div>
+      <div class="fseg">${extra || 'DATA: REAL · AS OF ' + M.ASOF}</div>
       <div class="fseg" style="margin-left:auto">MERIDIAN PMX v2.4 · © 2026</div>
     </footer>`;
   }
 
-  /* ---------- clock ---------- */
+  /* ---------- clock (bench price is a real snapshot — no fake walk) ---------- */
   function startClock() {
     const el = () => document.getElementById('hs-clock');
-    const benchEl = () => document.getElementById('hs-bench');
-    let bench = 8412.6;
     function tick() {
       const e = el(); if (e) {
         const d = new Date();
         e.textContent = d.toTimeString().slice(0, 8);
-      }
-      const b = benchEl(); if (b) {
-        bench += (Math.random() - 0.48) * 2.4;
-        const up = (Math.random() > 0.42);
-        b.innerHTML = `${bench.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <span class="${up ? 'up' : 'down'}">${up ? '▲' : '▼'}</span>`;
       }
     }
     tick(); setInterval(tick, 1000);
@@ -268,8 +252,8 @@
 
     function renderKpis() {
       const mt = M.metrics(cur.weights);
-      const path = C.simPath(120, mt.er, mt.vol, m.seed);
-      const mdd = C.maxDrawdown(path.slice(0, win + 1));
+      const path = M.pathFor(cur.weights, win); // real backtest
+      const mdd = C.maxDrawdown(path);
       const tiles = [
         { k: 'Exp. Return', v: mt.er.toFixed(1) + '%', s: 'ann. · gross', cls: 'up' },
         { k: 'Volatility', v: mt.vol.toFixed(1) + '%', s: 'ann. σ', cls: '' },
@@ -315,7 +299,7 @@
       const items = ws.map(x => {
         const ai = M.byT(x.t);
         let mc = 0;
-        ws.forEach(y => { const aj = M.byT(y.t); const corr = ai.t === aj.t ? 1 : (ai.sector === aj.sector ? 0.55 : 0.3); mc += y.w * (ai.vol / 100) * (aj.vol / 100) * corr; });
+        ws.forEach(y => { const aj = M.byT(y.t); const corr = M.rhoOf(ai.t, aj.t); mc += y.w * (ai.vol / 100) * (aj.vol / 100) * corr; });
         const rc = total > 0 ? (x.w * mc / total) : 0;
         return { t: x.t, color: ai.color, rc };
       }).sort((a, b) => b.rc - a.rc).slice(0, 8);
@@ -348,20 +332,19 @@
     }
 
     function renderPerf() {
-      const mt = M.metrics(cur.weights);
-      const pPort = C.simPath(win, mt.er, mt.vol, m.seed);
-      const pBench = C.simPath(win, M.BENCH.er, M.BENCH.vol, 424242);
+      const pPort = M.pathFor(cur.weights, win);   // real backtest, monthly rebalanced
+      const pBench = M.benchPath(win);             // real benchmark (SPY)
       const yrs = win / 12;
       const xlabels = [];
       for (let q = 0; q <= yrs; q++) xlabels.push({ i: Math.round((q / yrs) * win), t: q === yrs ? 'NOW' : `Y−${yrs - q}` });
       document.getElementById('perfChart').innerHTML = C.line([
         { name: m.code, color: C.css('--up'), data: pPort, fill: true, width: 1.8 },
-        { name: 'MGX', color: C.css('--fg-mute'), data: pBench, dash: '4 3', width: 1.3 },
+        { name: M.BENCH.code, color: C.css('--fg-mute'), data: pBench, dash: '4 3', width: 1.3 },
       ], { h: 240, xlabels });
       const endP = pPort[pPort.length - 1], endB = pBench[pBench.length - 1];
       document.getElementById('perfLegend').innerHTML = `
-        <div class="li"><span class="sw2" style="background:${C.css('--up')}"></span>${m.code} BOOK <span class="mono up" style="margin-left:6px">${((endP / 100 - 1) * 100).toFixed(1)}%</span></div>
-        <div class="li"><span class="sw2" style="background:${C.css('--fg-mute')}"></span>MGX BENCHMARK <span class="mono dim" style="margin-left:6px">${((endB / 100 - 1) * 100).toFixed(1)}%</span></div>
+        <div class="li"><span class="sw2" style="background:${C.css('--up')}"></span>${m.code} BOOK <span class="mono ${endP >= 100 ? 'up' : 'down'}" style="margin-left:6px">${((endP / 100 - 1) * 100).toFixed(1)}%</span></div>
+        <div class="li"><span class="sw2" style="background:${C.css('--fg-mute')}"></span>${M.BENCH.code} BENCHMARK <span class="mono dim" style="margin-left:6px">${((endB / 100 - 1) * 100).toFixed(1)}%</span></div>
         <div class="li" style="margin-left:auto"><span class="dim">ALPHA</span> <span class="mono ${endP >= endB ? 'up' : 'down'}">${((endP - endB) / 100 * 100).toFixed(1)} pts</span></div>`;
     }
 

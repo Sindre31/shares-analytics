@@ -1,10 +1,10 @@
 # MERIDIAN PMX — Portfolio Model Exchange
 
-A data-dense, Bloomberg-terminal-style site that runs **10 canonical portfolio-construction models** live against a shared synthetic universe of 17 assets.
+A data-dense, Bloomberg-terminal-style site that runs **10 canonical portfolio-construction models** live against a shared universe of 17 **real assets** (NVDA, MSFT, JPM, XOM, … plus VXUS/AGG/BIL ETFs), built on real market data.
 
 ## Pages
 
-- **`index.html`** — landing page: hero, live ticker tape, risk/return scatter of all 10 model books vs. the MGX benchmark (click a dot to open the model), sortable comparison table, and the investable universe.
+- **`index.html`** — landing page: hero, ticker tape (real last closes & 1-day moves), risk/return scatter of all 10 model books vs. the S&P 500 benchmark (click a dot to open the model), sortable comparison table, and the investable universe.
 - **`models/01…10-*.html`** — one page per model, each running its *own* construction logic:
 
 | # | Model | Mode | # | Model | Mode |
@@ -43,4 +43,14 @@ python3 -m http.server
 
 ## Data
 
-All data is **synthetic / illustrative** — tickers are fictional. Real estimates can be swapped into `assets/models.js` (the `U` universe table) and every chart updates automatically.
+Real market data, snapshotted into `assets/data.js` (generated with `yfinance`):
+
+- **Universe** — 17 real assets: last close, 1-day change, 2y realized volatility, 2y beta vs SPY, 12-1 month momentum, trailing P/E, P/B, dividend yield, market cap, quality (ROE).
+- **Returns** — last 120 monthly total returns per asset; performance charts are **real monthly-rebalanced backtests**, and pairwise correlations used in the risk math are computed from the last 36 months.
+- **Expected returns (μ)** — estimates by construction: `0.55 × CAPM-implied (rf + β·ERP, ERP = 4.5%) + 0.45 × trailing-10y annualized (clipped to [−5%, 35%])`.
+- **Risk-free rate** — 13-week T-bill yield (^IRX).
+- **Benchmark** — S&P 500 via SPY.
+
+To refresh the snapshot, re-run the fetch script (see `scripts/fetch_market.py`) and redeploy — every chart updates automatically.
+
+Not investment advice.
