@@ -1,6 +1,11 @@
 # MERIDIAN PMX — Portfolio Model Exchange
 
-A data-dense, Bloomberg-terminal-style site over the **full Nordnet catalog** — every share on every exchange Nordnet offers (~12,200: US, Canada, Nordics, Europe) plus every fund (~880) — with **10 canonical portfolio-construction models** running live on the 60 most-traded Oslo Børs names + UCITS diversifiers, vs the **OBX** benchmark.
+A data-dense, Bloomberg-terminal-style site over the **full Nordnet catalog** — every share on every exchange Nordnet offers (~12,200: US, Canada, Nordics, Europe) plus every fund (~880) — with **10 canonical portfolio-construction models** running live on **two switchable universes** (OSL/GLB toggle in the header):
+
+- **Oslo** — the 100 most-traded Oslo Børs shares + UCITS diversifiers, vs **OBX**
+- **Global** — the 60 most-owned foreign shares on Nordnet (AAPL, NVDA, NOVO-B, …) + UCITS diversifiers, vs **S&P 500**
+
+Shares outside the selected universe get a **model screening panel** — momentum rank, value-composite percentile, low-vol rank and the MVO utility hurdle, computed against the live universe distribution.
 
 Live: https://shares-analytics.vercel.app
 
@@ -24,7 +29,7 @@ Each model page renders KPIs (return / vol / Sharpe / max-DD), a real growth-of-
 ## Universe (Nordnet Norway)
 
 - **Catalog (searchable):** every share on Nordnet across all exchanges (~12,200) and every fund (~880), imported from Nordnet's public API (`instrument_search` stocklist/fundlist). The search index (`assets/catalog.json`, ~1.5 MB) is lazy-loaded on first search; instrument details live in 256 shard files (`data/s/`).
-- **Model universe (what the 10 models trade):** the 60 most-traded Oslo Børs shares with ≥3 years of history and sane volatility (≤80% ann. — keeps real cyclicals, drops meme/distressed blowups), plus UCITS diversifiers: EUNL (MSCI World), EUNH (EUR govt bonds), XEON (cash proxy). Selection is dynamic — it follows traded value at each refresh.
+- **Model universes (what the 10 models trade):** selected dynamically at each refresh with ≥3 years of history and sane volatility (≤80% ann. — keeps real cyclicals, drops meme/distressed blowups), plus UCITS diversifiers (EUNL/EUNH/XEON). Oslo follows traded value on Oslo Børs; Global follows Nordnet owner counts across all foreign exchanges. Market caps are FX-converted to NOK for cap-weighting.
 
 ## Stack
 
