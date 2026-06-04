@@ -76,10 +76,23 @@
     </footer>`;
   }
 
+  /* ---------- lazy catalog (13k instruments — fetched on first search) ---------- */
+  let catPromise = null;
+  function loadCatalog(ctx) {
+    if (window.MERIDIAN_CAT) return Promise.resolve(window.MERIDIAN_CAT);
+    if (!catPromise) {
+      const pre = ctx === 'index' ? '' : '../';
+      catPromise = fetch(pre + 'assets/catalog.json')
+        .then(r => r.json())
+        .then(c => (window.MERIDIAN_CAT = c))
+        .catch(() => (catPromise = null, []));
+    }
+    return catPromise;
+  }
+
   /* ---------- global search over the full Nordnet catalog ---------- */
   function initSearch(ctx) {
     const P = paths(ctx);
-    const CAT = window.MERIDIAN_CAT || [];
     const inp = document.getElementById('globalSearch'), dd = document.getElementById('searchDD');
     if (!inp || !dd) return;
     let items = [];
@@ -96,10 +109,17 @@
     function open(q) {
       const s = q.trim().toLowerCase();
       if (!s) return close();
+      const CAT = window.MERIDIAN_CAT;
+      if (!CAT) {
+        dd.innerHTML = `<div class="sr mute">LOADING CATALOG <span class="blink">_</span></div>`;
+        dd.classList.add('open');
+        loadCatalog(ctx).then(() => { if (inp.value.trim()) open(inp.value); });
+        return;
+      }
       items = CAT.map(c => ({ c, sc: score(c, s) })).filter(x => x.sc < 99)
         .sort((a, b) => a.sc - b.sc || (b.c.owners || 0) - (a.c.owners || 0))
         .slice(0, 9).map(x => x.c);
-      if (!items.length) { dd.innerHTML = `<div class="sr mute">NO MATCH · ${CAT.length} INSTRUMENTS</div>`; dd.classList.add('open'); return; }
+      if (!items.length) { dd.innerHTML = `<div class="sr mute">NO MATCH · ${CAT.length.toLocaleString('en-US')} INSTRUMENTS</div>`; dd.classList.add('open'); return; }
       dd.innerHTML = items.map(c => {
         const u = c.yt && M.byT(c.yt);
         const chg = c.chg == null ? null : c.chg;
@@ -114,7 +134,7 @@
       dd.classList.add('open');
     }
     inp.addEventListener('input', () => open(inp.value));
-    inp.addEventListener('focus', () => open(inp.value));
+    inp.addEventListener('focus', () => { loadCatalog(ctx); open(inp.value); });
     inp.addEventListener('keydown', e => {
       if (e.key === 'Enter' && items.length) location.href = P.assetId(items[0].id);
       if (e.key === 'Escape') { inp.blur(); close(); }
@@ -420,5 +440,5 @@
     recompute();
   }
 
-  window.MER = { header, ticker, footer, startClock, initSearch, openInfo, closeInfo, renderModel, paths, fileFor, dayChange, lastPx };
+  window.MER = { header, ticker, footer, startClock, initSearch, loadCatalog, openInfo, closeInfo, renderModel, paths, fileFor, dayChange, lastPx };
 })();

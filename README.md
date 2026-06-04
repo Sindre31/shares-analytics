@@ -1,6 +1,6 @@
 # MERIDIAN PMX — Portfolio Model Exchange
 
-A data-dense, Bloomberg-terminal-style site over the **full Nordnet Norway catalog** — every Norwegian share (~293) and every fund (~880) Nordnet offers — with **10 canonical portfolio-construction models** running live on the 60 most-traded Oslo Børs names + UCITS diversifiers, vs the **OBX** benchmark.
+A data-dense, Bloomberg-terminal-style site over the **full Nordnet catalog** — every share on every exchange Nordnet offers (~12,200: US, Canada, Nordics, Europe) plus every fund (~880) — with **10 canonical portfolio-construction models** running live on the 60 most-traded Oslo Børs names + UCITS diversifiers, vs the **OBX** benchmark.
 
 Live: https://shares-analytics.vercel.app
 
@@ -23,7 +23,7 @@ Each model page renders KPIs (return / vol / Sharpe / max-DD), a real growth-of-
 
 ## Universe (Nordnet Norway)
 
-- **Catalog (searchable):** every Norwegian share and every fund on Nordnet NO, imported from Nordnet's public API (`instrument_search` stocklist/fundlist).
+- **Catalog (searchable):** every share on Nordnet across all exchanges (~12,200) and every fund (~880), imported from Nordnet's public API (`instrument_search` stocklist/fundlist). The search index (`assets/catalog.json`, ~1.5 MB) is lazy-loaded on first search; instrument details live in 256 shard files (`data/s/`).
 - **Model universe (what the 10 models trade):** the 60 most-traded Oslo Børs shares with ≥3 years of history and sane volatility (≤80% ann. — keeps real cyclicals, drops meme/distressed blowups), plus UCITS diversifiers: EUNL (MSCI World), EUNH (EUR govt bonds), XEON (cash proxy). Selection is dynamic — it follows traded value at each refresh.
 
 ## Stack
@@ -37,8 +37,8 @@ models/*.html         10 model pages
 assets/terminal.css   shared design system (dark terminal, Swiss sans + IBM Plex Mono)
 assets/charts.js      SVG chart helpers (donut, line, bars, scatter, spark)
 assets/data.js        model-universe snapshot (generated)
-assets/catalog.js     search index — all Nordnet NO instruments (generated)
-data/i/<id>.json      per-instrument detail (generated, ~1,170 files)
+assets/catalog.json   search index — all Nordnet instruments (generated, lazy-loaded)
+data/s/<n>.json       detail shards, id % 256 (generated)
 assets/models.js      universe + 10 model compute functions + info content
 assets/app.js         shared chrome (header/search/ticker/footer), info drawer, model renderer
 assets/index.js       landing page renderer
@@ -59,7 +59,7 @@ python3 -m http.server
 ## Data
 
 - **Nordnet public API** — instrument lists, last price & 1-day move, key ratios (P/E, P/B, P/S, yield), Nordnet owner counts, deep-link slugs; for funds also fees, Morningstar rating, KIID risk, AUM, SFDR/ESG, return summaries (1M–10Y). Nordnet does **not** expose fund NAV history publicly, so funds show return summaries instead of charts.
-- **Yahoo Finance** (`yfinance`) — 11y daily history for all ~293 Oslo Børs shares + ETFs: monthly returns (charts are **real monthly-rebalanced backtests**), 2y vol & beta vs OBX, 12-1 momentum; sector/mcap/ROE for the model universe.
+- **Yahoo Finance** (`yfinance`) — 11y daily history for all Oslo Børs shares + ETFs (charts are **real monthly-rebalanced backtests**; 2y vol & beta vs OBX), and 10y monthly history for the ~3,000 most-owned foreign shares. Foreign histories are **price-validated** against Nordnet's last quote (±15%) before use — mismatched listings simply get no chart.
 - **Expected returns (μ)** — estimates by construction: `0.55 × CAPM-implied (rf + β·ERP, ERP = 5%) + 0.45 × trailing-10y annualized (clipped to [−5%, 35%])`.
 - **Risk-free rate** — Norges Bank key policy rate (styringsrenten), from the Norges Bank API.
 - **Benchmark** — OBX (`OBX.OL`, with fallbacks).

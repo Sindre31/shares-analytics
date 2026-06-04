@@ -174,7 +174,7 @@
   function ff5(s){ // factor tilts
     const bSize=(s.size ?? 0.30), bVal=(s.value ?? 0.40), bProf=(s.prof ?? 0.30);
     const cand = EQUITY;
-    const fSize = z(cand.map(a=>-Math.log(a.mcap)));     // small = high
+    const fSize = z(cand.map(a=>-Math.log(Math.max(0.5,a.mcap)))); // small = high (guard mcap=0)
     const fVal  = z(cand.map(a=>1/Math.max(0.3,a.pb)));  // cheap = high
     const fProf = z(cand.map(a=>a.qual));                // quality = high
     const w = norm(cand.map((a,i)=>({t:a.t, raw: Math.exp(bSize*fSize[i]+bVal*fVal[i]+bProf*fProf[i]) - 0.3 })));

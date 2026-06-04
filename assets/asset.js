@@ -7,9 +7,16 @@
    ============================================================ */
 (function () {
   const M = window.MERIDIAN, C = window.Charts, MER = window.MER;
-  const CAT = window.MERIDIAN_CAT || [];
   const { esc } = C;
   const P = MER.paths('index');
+  const COUNTS = (window.MERIDIAN_DATA || {}).counts || {};
+  const TOTAL = (COUNTS.shares || 0) + (COUNTS.funds || 0);
+  const SHARDS = 256;
+  const fetchDetail = id => fetch(`data/s/${(+id) % SHARDS}.json`).then(r => r.json()).then(sh => {
+    const d = sh[String(id)];
+    if (!d) throw new Error('not in shard');
+    return d;
+  });
 
   const fmtChg = v => v == null ? '—' : `<span class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '▲' : '▼'} ${Math.abs(v).toFixed(2)}%</span>`;
   const pct = (v, d = 1) => v == null ? '—' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d) + '%';
@@ -158,7 +165,7 @@
             <div class="mh-no mono" style="color:${color}">${esc(d.sym)}</div>
             <div>
               <h1 class="mh-title">${esc(d.name)}</h1>
-              <p class="mh-tag">${esc(d.cat)} · ${esc(d.ccy)} · last ${d.px != null ? d.px.toFixed(2) : '—'} ${fmtChg(d.chg)} on the day
+              <p class="mh-tag">${esc(d.cat)} · ${esc(d.ccy)} · last ${d.px > 0 ? d.px.toFixed(2) : '—'} ${fmtChg(d.chg)} on the day
                 ${d.owners ? `· <span class="mono dim">${d.owners.toLocaleString('en-US')} owners on Nordnet</span>` : ''}</p>
             </div>
           </div>
@@ -170,8 +177,8 @@
 
         <div class="kpis fade-in">
           ${u ? kpi('Exp. Return', u.er.toFixed(1) + '%', 'μ estimate · ann.', 'up') : kpi('1Y Return', pct(d.y && d.y.yield_1y), 'Nordnet', d.y && d.y.yield_1y >= 0 ? 'up' : 'down')}
-          ${kpi('Volatility', st.vol != null ? st.vol.toFixed(1) + '%' : '—', '2y realized · ann. σ')}
-          ${kpi('Beta vs ' + M.BENCH.code, st.beta != null ? st.beta.toFixed(2) : '—', '2y daily')}
+          ${kpi('Volatility', st.vol != null ? st.vol.toFixed(1) + '%' : '—', (st.src || 'realized') + ' · ann. σ')}
+          ${kpi('Beta vs ' + M.BENCH.code, st.beta != null ? st.beta.toFixed(2) : '—', st.src || '—')}
           ${kpi('12-1 Momentum', st.mom != null ? pct(st.mom) : '—', 'trailing yr, ex last mo', st.mom >= 0 ? 'up' : 'down')}
           ${kpi('P/E', r.pe ? r.pe.toFixed(1) : '—', 'trailing')}
           ${kpi('P/B', r.pb ? r.pb.toFixed(2) : '—', 'price / book')}
@@ -200,7 +207,7 @@
                 <span class="kk">Ticker</span><span class="vv">${esc(d.sym)}</span>
                 <span class="kk">ISIN</span><span class="vv">${esc(d.isin || '—')}</span>
                 <span class="kk">Currency</span><span class="vv">${esc(d.ccy)}</span>
-                <span class="kk">Last close</span><span class="vv">${d.px != null ? d.px.toFixed(2) : '—'}</span>
+                <span class="kk">Last close</span><span class="vv">${d.px > 0 ? d.px.toFixed(2) : '—'}</span>
                 <span class="kk">Owners @ Nordnet</span><span class="vv">${(d.owners || 0).toLocaleString('en-US')}</span>
                 <span class="kk">Data as of</span><span class="vv">${esc(M.ASOF)}</span>
               </div></div>
@@ -228,7 +235,7 @@
             <div class="mh-no mono" style="color:var(--info);font-size:18px;max-width:120px;line-height:1.25">FOND</div>
             <div>
               <h1 class="mh-title">${esc(d.name)}</h1>
-              <p class="mh-tag">${esc(d.cat)} · ${esc(d.ccy)} · NAV ${d.px != null ? d.px.toFixed(2) : '—'} ${fmtChg(d.chg)}
+              <p class="mh-tag">${esc(d.cat)} · ${esc(d.ccy)} · NAV ${d.px > 0 ? d.px.toFixed(2) : '—'} ${fmtChg(d.chg)}
                 ${d.owners ? `· <span class="mono dim">${d.owners.toLocaleString('en-US')} owners on Nordnet</span>` : ''}</p>
             </div>
           </div>
@@ -306,7 +313,7 @@
     document.getElementById('app').innerHTML = `<div class="wrap page">
       <div class="section-bar"><h2>${esc(msg)}</h2><div class="hr"></div></div>
       <div class="panel"><div class="panel-body">
-        <p class="dim" style="margin:0 0 14px">Search any of the ${CAT.length.toLocaleString('en-US')} Nordnet instruments in the box above, or open a model-universe name:</p>
+        <p class="dim" style="margin:0 0 14px">Search any of the ${TOTAL.toLocaleString('en-US')} Nordnet instruments in the box above, or open a model-universe name:</p>
         <div class="wrap-flex" style="gap:8px">${M.U.slice(0, 30).map(x => `<a class="btn" href="asset.html?t=${encodeURIComponent(x.t)}"><span style="color:${x.color}">●</span> ${esc(x.t)}</a>`).join('')}</div>
       </div></div></div>`;
   }
@@ -318,7 +325,7 @@
 
     if (id) {
       try {
-        const d = await (await fetch(`data/i/${encodeURIComponent(id)}.json`)).json();
+        const d = await fetchDetail(id);
         if (d.type === 'FND') renderFund(d); else renderShare(d);
       } catch (e) {
         renderUnknown('UNKNOWN INSTRUMENT · ' + id);
@@ -330,7 +337,7 @@
       if (!u) return renderUnknown('UNKNOWN TICKER · ' + t);
       if (u.nn) {
         try {
-          const d = await (await fetch(`data/i/${u.nn}.json`)).json();
+          const d = await fetchDetail(u.nn);
           return renderShare(d);
         } catch (e) { /* fall back to local data */ }
       }
