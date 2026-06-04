@@ -10,8 +10,8 @@
   const fileFor = m => `${m.no}-${m.id}.html`;
   function paths(ctx) {
     return ctx === 'index'
-      ? { index: 'index.html', model: m => `models/${fileFor(m)}` }
-      : { index: '../index.html', model: m => fileFor(m) };
+      ? { index: 'index.html', model: m => `models/${fileFor(m)}`, asset: t => `asset.html?t=${encodeURIComponent(t)}` }
+      : { index: '../index.html', model: m => fileFor(m), asset: t => `../asset.html?t=${encodeURIComponent(t)}` };
   }
 
   /* ---------- real last close & 1-day move (from data snapshot) ---------- */
@@ -35,8 +35,12 @@
         <a href="${P.index}" class="${activeId === 'home' ? 'active' : ''}">◴ OVERVIEW</a>
         ${nav}
       </nav>
+      <div class="th-search">
+        <input id="globalSearch" type="text" placeholder="⌕ SEARCH SHARE" autocomplete="off" spellcheck="false">
+        <div class="th-search-dd" id="searchDD"></div>
+      </div>
       <div class="th-right">
-        <div class="th-stat"><span class="k">${M.BENCH.code} · ${M.BENCH.ticker}</span><span class="v" id="hs-bench">${M.BENCH.px.toLocaleString('en-US',{minimumFractionDigits:2})} <span class="${M.BENCH.chg>=0?'up':'down'}">${M.BENCH.chg>=0?'▲':'▼'}</span></span></div>
+        <div class="th-stat"><span class="k">${M.BENCH.code} INDEX</span><span class="v" id="hs-bench">${M.BENCH.px.toLocaleString('en-US',{minimumFractionDigits:2})} <span class="${M.BENCH.chg>=0?'up':'down'}">${M.BENCH.chg>=0?'▲':'▼'}</span></span></div>
         <div class="th-stat"><span class="k">Risk-free</span><span class="v">${M.RF.toFixed(2)}%</span></div>
         <div class="th-stat th-clock"><span class="k">Session</span><span class="v" id="hs-clock">––:––:––</span></div>
       </div>
@@ -45,7 +49,7 @@
 
   /* ---------- TICKER ---------- */
   function ticker() {
-    const cells = M.U.filter(a => a.t !== 'BIL').map(a => {
+    const cells = M.U.filter(a => a.t !== M.CASH).map(a => {
       const ch = dayChange(a), px = lastPx(a);
       const cls = ch >= 0 ? 'up' : 'down', arr = ch >= 0 ? '▲' : '▼';
       return `<span class="tk"><span class="sym">${a.t}</span><span class="px">${px.toFixed(2)}</span><span class="chg ${cls}">${arr} ${Math.abs(ch).toFixed(2)}%</span></span>`;
@@ -63,6 +67,37 @@
       <div class="fseg">${extra || 'DATA: REAL · AS OF ' + M.ASOF}</div>
       <div class="fseg" style="margin-left:auto">MERIDIAN PMX v2.4 · © 2026</div>
     </footer>`;
+  }
+
+  /* ---------- global share search ---------- */
+  function initSearch(ctx) {
+    const P = paths(ctx);
+    const inp = document.getElementById('globalSearch'), dd = document.getElementById('searchDD');
+    if (!inp || !dd) return;
+    let items = [];
+    function close() { dd.classList.remove('open'); dd.innerHTML = ''; items = []; }
+    function open(q) {
+      const s = q.trim().toLowerCase();
+      if (!s) return close();
+      items = M.U.filter(a => a.t.toLowerCase().includes(s) || a.name.toLowerCase().includes(s)).slice(0, 8);
+      if (!items.length) { dd.innerHTML = `<div class="sr mute">NO MATCH IN UNIVERSE</div>`; dd.classList.add('open'); return; }
+      dd.innerHTML = items.map(a => `
+        <a class="sr" href="${P.asset(a.t)}">
+          <span class="sym-chip" style="background:${a.color}"></span>
+          <span class="mono">${esc(a.t)}</span>
+          <span class="srn">${esc(a.name)}</span>
+          <span class="cat-tag" style="margin-left:auto">${esc(a.sector)}</span>
+          <span class="mono ${a.chg >= 0 ? 'up' : 'down'}" style="width:62px;text-align:right">${a.chg >= 0 ? '▲' : '▼'} ${Math.abs(a.chg).toFixed(2)}%</span>
+        </a>`).join('');
+      dd.classList.add('open');
+    }
+    inp.addEventListener('input', () => open(inp.value));
+    inp.addEventListener('focus', () => open(inp.value));
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && items.length) location.href = P.asset(items[0].t);
+      if (e.key === 'Escape') { inp.blur(); close(); }
+    });
+    document.addEventListener('click', e => { if (!e.target.closest('.th-search')) close(); });
   }
 
   /* ---------- clock (bench price is a real snapshot — no fake walk) ---------- */
@@ -127,7 +162,7 @@
     // chrome
     document.body.insertAdjacentHTML('afterbegin', header(id, 'model') + ticker());
     document.body.insertAdjacentHTML('beforeend', footer(`MODEL ${m.no} / ${m.code} · ${m.info.class.toUpperCase()}`));
-    startClock();
+    startClock(); initSearch('model');
 
     const root = document.getElementById('app');
     root.innerHTML = `
@@ -268,7 +303,7 @@
       const rows = cur.weights.map(x => {
         const a = M.byT(x.t);
         const wpct = (x.w * 100);
-        return `<tr class="clickable"><td><div class="sym-cell"><span class="sym-chip" style="background:${a.color}"></span><span><span class="mono">${a.t}</span> <span class="asset-name">${esc(a.name)}</span></span></div></td>
+        return `<tr class="clickable" data-t="${esc(a.t)}"><td><div class="sym-cell"><span class="sym-chip" style="background:${a.color}"></span><span><span class="mono">${a.t}</span> <span class="asset-name">${esc(a.name)}</span></span></div></td>
           <td class="dim">${esc(a.sector)}</td>
           <td><div class="wbar"><i style="width:${Math.min(100, wpct * 2.2)}%"></i><span>${wpct.toFixed(1)}%</span></div></td>
           <td class="${a.er >= M.RF ? 'up' : 'dim'}">${a.er.toFixed(1)}%</td>
@@ -280,6 +315,9 @@
         <thead><tr><th>Asset</th><th>Sector</th><th>Weight</th><th>Exp.Ret</th><th>Vol</th><th>β</th><th>Yield</th></tr></thead>
         <tbody>${rows}</tbody></table>`;
       document.getElementById('bookCount').textContent = cur.weights.length + ' POSITIONS';
+      const P = paths('model');
+      document.querySelectorAll('#bookTable tr.clickable').forEach(tr =>
+        tr.addEventListener('click', () => location.href = P.asset(tr.dataset.t)));
     }
 
     function renderDonut() {
@@ -360,5 +398,5 @@
     recompute();
   }
 
-  window.MER = { header, ticker, footer, startClock, openInfo, closeInfo, renderModel, paths, fileFor, dayChange, lastPx };
+  window.MER = { header, ticker, footer, startClock, initSearch, openInfo, closeInfo, renderModel, paths, fileFor, dayChange, lastPx };
 })();

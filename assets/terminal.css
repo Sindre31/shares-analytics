@@ -129,9 +129,40 @@ a { color: inherit; text-decoration: none; }
 .th-nav a.active .tcode { color: var(--up); }
 
 .th-right {
-  margin-left: auto; display: flex; align-items: center; gap: 0;
+  display: flex; align-items: center; gap: 0;
   border-left: 1px solid var(--line);
 }
+
+/* global share search */
+.th-search {
+  position: relative; display: flex; align-items: center;
+  margin-left: auto; padding: 0 10px;
+  border-left: 1px solid var(--line);
+}
+.th-search input {
+  width: 170px; height: 28px; padding: 0 10px;
+  background: var(--bg); border: 1px solid var(--line-2); border-radius: 2px;
+  color: var(--fg); font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em;
+  outline: none; transition: border-color .12s, width .15s;
+}
+.th-search input::placeholder { color: var(--fg-mute); }
+.th-search input:focus { border-color: var(--up); width: 230px; }
+@media (max-width: 900px){ .th-search input, .th-search input:focus { width: 120px; } }
+.th-search-dd {
+  display: none; position: absolute; top: calc(100% + 1px); right: 10px; z-index: 60;
+  min-width: 360px; max-width: 92vw;
+  background: var(--bg-1); border: 1px solid var(--line-2); border-radius: var(--radius);
+  box-shadow: 0 16px 40px rgba(0,0,0,.55);
+}
+.th-search-dd.open { display: block; }
+.th-search-dd .sr {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 12px; font-size: 12px; cursor: pointer;
+  border-bottom: 1px solid var(--line-soft);
+}
+.th-search-dd .sr:last-child { border-bottom: none; }
+.th-search-dd .sr:hover { background: var(--bg-2); }
+.th-search-dd .srn { color: var(--fg-dim); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .th-stat {
   display: flex; flex-direction: column; justify-content: center;
   padding: 0 14px; height: 100%;

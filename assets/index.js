@@ -32,7 +32,7 @@
   function init() {
     document.body.insertAdjacentHTML('afterbegin', MER.header('home', 'index') + MER.ticker());
     document.body.insertAdjacentHTML('beforeend', MER.footer('OVERVIEW · 10 MODELS LIVE'));
-    MER.startClock();
+    MER.startClock(); MER.initSearch('index');
 
     const snaps = M.MODELS.map(snapshot);
 
@@ -43,7 +43,7 @@
           <div class="hero-main">
             <div class="eyebrow">Meridian Portfolio Model Exchange · PMX</div>
             <h1 class="hero-h1">Ten models.<br>One universe.<br><span class="up">The optimal book.</span></h1>
-            <p class="hero-sub">Ten canonical portfolio-construction models — from Markowitz to machine-learning — each run live against a single universe of ${M.U.length} real assets, on real market data as of ${M.ASOF}. Compare the books they build, then open any model to tune it.</p>
+            <p class="hero-sub">Ten canonical portfolio-construction models — from Markowitz to machine-learning — each run live against ${M.U.length} real instruments tradable on Nordnet Norway: Oslo Børs shares plus UCITS funds, vs the OBX benchmark. Real market data as of ${M.ASOF}. Compare the books, tune any model, or search a share to see how every model treats it.</p>
             <div class="hero-cta">
               <a class="btn primary" href="#directory">▸ BROWSE MODELS</a>
               <a class="btn" href="#frontier">▸ RISK / RETURN MAP</a>
@@ -83,7 +83,7 @@
           <div class="panel-body tight"><div id="compTable"></div></div>
         </div>
 
-        <div class="section-bar mt24"><h2>INVESTABLE UNIVERSE</h2><span class="cat-tag">${M.U.length} CONSTITUENTS</span><div class="hr"></div></div>
+        <div class="section-bar mt24"><h2>INVESTABLE UNIVERSE</h2><span class="cat-tag">${M.U.length} CONSTITUENTS · TRADABLE ON NORDNET NO · CLICK A ROW FOR CROSS-MODEL VIEW</span><div class="hr"></div></div>
         <div class="panel">
           <div class="panel-body tight"><div id="uniTable"></div></div>
         </div>
@@ -161,22 +161,27 @@
     }
     drawTable();
 
-    // universe table
+    // universe table (click a row to open the asset's cross-model view)
     const uni = [...M.U].sort((a, b) => b.mcap - a.mcap);
-    const ubody = uni.map(a => `<tr>
+    const ubody = uni.map(a => `<tr class="clickable" data-t="${esc(a.t)}">
       <td class="tleft"><div class="sym-cell"><span class="sym-chip" style="background:${a.color}"></span><span class="mono" style="font-weight:600">${a.t}</span></div></td>
       <td class="tleft asset-name" style="font-size:11.5px">${esc(a.name)}</td>
       <td class="tleft dim">${esc(a.sector)}</td>
+      <td class="dim">${a.px.toFixed(2)} <span class="mute" style="font-size:9.5px">${esc(a.ccy)}</span></td>
+      <td class="${a.chg >= 0 ? 'up' : 'down'}">${a.chg >= 0 ? '+' : '−'}${Math.abs(a.chg).toFixed(2)}%</td>
       <td class="${a.er >= M.RF ? 'up' : 'dim'}">${a.er.toFixed(1)}%</td>
       <td class="dim">${a.vol.toFixed(0)}%</td>
       <td class="dim">${a.beta.toFixed(2)}</td>
       <td class="dim">${a.mom >= 0 ? '+' : '−'}${Math.abs(a.mom)}%</td>
       <td class="dim">${a.pe || '—'}</td>
       <td class="dim">${a.div.toFixed(1)}%</td>
-      <td class="dim">$${a.mcap >= 1000 ? (a.mcap / 1000).toFixed(1) + 'T' : a.mcap + 'B'}</td></tr>`).join('');
+      <td class="dim">kr ${a.mcap >= 1000 ? (a.mcap / 1000).toFixed(2) + 'T' : a.mcap.toFixed(0) + 'B'}</td></tr>`).join('');
     document.getElementById('uniTable').innerHTML = `<table class="tbl"><thead><tr>
-      <th class="tleft">Ticker</th><th class="tleft">Name</th><th class="tleft">Sector</th><th>Exp.Ret</th><th>Vol</th><th>β</th><th>12-1 Mom</th><th>P/E</th><th>Yield</th><th>Mkt Cap</th>
+      <th class="tleft">Ticker</th><th class="tleft">Name</th><th class="tleft">Sector</th><th>Last</th><th>1D</th><th>Exp.Ret</th><th>Vol</th><th>β</th><th>12-1 Mom</th><th>P/E</th><th>Yield</th><th>Mkt Cap</th>
       </tr></thead><tbody>${ubody}</tbody></table>`;
+    const P = MER.paths('index');
+    document.querySelectorAll('#uniTable tr.clickable').forEach(tr =>
+      tr.addEventListener('click', () => location.href = P.asset(tr.dataset.t)));
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

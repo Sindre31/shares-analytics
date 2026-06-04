@@ -1,0 +1,38 @@
+name: Refresh market data
+
+on:
+  schedule:
+    # 03:30 UTC nightly Tue-Sat — after US/European close, before Oslo open
+    - cron: "30 3 * * 2-6"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install yfinance numpy
+
+      - name: Fetch market data
+        run: python scripts/fetch_market.py
+
+      - name: Commit & push if changed
+        run: |
+          if git diff --quiet assets/data.js; then
+            echo "no data change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/data.js
+          git commit -m "data: nightly market snapshot $(date -u +%F)"
+          git push

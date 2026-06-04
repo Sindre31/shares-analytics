@@ -19,7 +19,8 @@
   ];
 
   // universe: real assets from the data snapshot (er/vol/beta/mom/pe/pb/div/mcap/qual)
-  const U = D.universe.map((a,i)=>({ ...a, color:PAL[i] }));
+  const U = D.universe.map((a,i)=>({ ...a, color:PAL[i % PAL.length] }));
+  const CASH = D.cash, BOND = D.bond;
 
   const MAP = Object.fromEntries(U.map(a=>[a.t,a]));
   const byT = t => MAP[t];
@@ -79,8 +80,8 @@
     const pos = list.filter(x=>x.raw>1e-9); const s=pos.reduce((a,x)=>a+x.raw,0)||1;
     return pos.map(x=>({t:x.t,w:x.raw/s})).sort((a,b)=>b.w-a.w);
   }
-  const RISKY = U.filter(a=>a.t!=='BIL');
-  const EQUITY = U.filter(a=>!['BIL','AGG'].includes(a.t));
+  const RISKY = U.filter(a=>a.t!==CASH);
+  const EQUITY = U.filter(a=>![CASH,BOND].includes(a.t));
   function capw(list){ return norm(list.map(a=>({t:a.t,raw:a.mcap}))); }
 
   /* ---------- model compute functions ---------- */
@@ -128,15 +129,15 @@
     const bvol = metrics(base).vol;
     let k = Math.min(1, target/bvol);
     const w = base.map(x=>({t:x.t,w:x.w*k}));
-    const cash = 1-k; if (cash>0.001) w.push({t:'BIL',w:cash});
+    const cash = 1-k; if (cash>0.001) w.push({t:CASH,w:cash});
     return { weights:w.sort((a,b)=>b.w-a.w), cash, extras:[{k:'Risk budget',v:'Equal ERC'},{k:'Target σ',v:target.toFixed(1)+'%'},{k:'Invested',v:(k*100).toFixed(0)+'%'}] };
   }
 
   function mvo(s){ // mean-variance utility maximization
     const lam = s.lambda ?? 2.0;
     const w = norm(RISKY.map(a=>({t:a.t, raw: (a.er-RF) - 0.5*lam*(a.vol*a.vol)/100 })));
-    if (!w.length) // no risky asset clears the utility hurdle -> hold T-bills
-      return { weights:[{t:'BIL',w:1}], cash:1, extras:[{k:'Objective',v:'max  μ−½λσ²'},{k:'Risk aversion λ',v:lam.toFixed(1)},{k:'Frontier',v:'All cash — hurdle unmet'}] };
+    if (!w.length) // no risky asset clears the utility hurdle -> hold cash
+      return { weights:[{t:CASH,w:1}], cash:1, extras:[{k:'Objective',v:'max  μ−½λσ²'},{k:'Risk aversion λ',v:lam.toFixed(1)},{k:'Frontier',v:'All cash — hurdle unmet'}] };
     return { weights:w, extras:[{k:'Objective',v:'max  μ−½λσ²'},{k:'Risk aversion λ',v:lam.toFixed(1)},{k:'Frontier',v:'Tangency tilt'}] };
   }
 
@@ -144,7 +145,7 @@
     const eq = (s.equity ?? 85)/100;
     const mkt = capw(RISKY);
     const w = mkt.map(x=>({t:x.t,w:x.w*eq}));
-    const cash = 1-eq; if (cash>0.001) w.push({t:'BIL',w:cash});
+    const cash = 1-eq; if (cash>0.001) w.push({t:CASH,w:cash});
     const mktPrem = (BENCH.er-RF);
     return { weights:w.sort((a,b)=>b.w-a.w), cash, mktPrem,
              extras:[{k:'Market sleeve',v:(eq*100).toFixed(0)+'%'},{k:'Risk-free',v:(cash*100).toFixed(0)+'%'},{k:'Equity risk prem.',v:mktPrem.toFixed(1)+'%'}] };
@@ -152,11 +153,11 @@
 
   // Black-Litterman views (manager tilts)
   const BL_VIEWS = [
-    {t:'NVDA', dir:'OVER', f:1.7, txt:'AI capex cycle → semis outperform +3.0%'},
-    {t:'CAT',  dir:'OVER', f:1.5, txt:'Infrastructure capex supercycle extends'},
-    {t:'ABT',  dir:'OVER', f:1.2, txt:'Defensive health quality bid'},
-    {t:'XOM',  dir:'UNDER',f:0.5, txt:'Oversupply → energy underperforms −2.0%'},
-    {t:'VZ',   dir:'UNDER',f:0.75,txt:'Wireless price competition headwind'},
+    {t:'KOG.OL',  dir:'OVER', f:1.7, txt:'European defence spending supercycle'},
+    {t:'SALM.OL', dir:'OVER', f:1.3, txt:'Tight salmon supply supports prices'},
+    {t:'DNB.OL',  dir:'OVER', f:1.2, txt:'Resilient NII, strong capital returns'},
+    {t:'EQNR.OL', dir:'UNDER',f:0.6, txt:'Softer oil & gas price deck −2.0%'},
+    {t:'TEL.OL',  dir:'UNDER',f:0.75,txt:'Mature telecom growth headwind'},
   ];
   function bl(s){
     const c = (s.conf ?? 40)/100;
@@ -182,10 +183,12 @@
 
   // HRP clusters (static)
   const HRP_CLUSTERS = [
-    {name:'Growth / Tech', members:['NVDA','NOW','MSFT','FSLR']},
-    {name:'Defensive',     members:['PG','ABT','DUK','VZ']},
-    {name:'Cyclical / Value',members:['XOM','JPM','CAT','O','VRTX']},
-    {name:'Diversifiers',  members:['NEM','VXUS','AGG']},
+    {name:'Energy / Offshore', members:['EQNR.OL','AKRBP.OL','FRO.OL','SUBC.OL']},
+    {name:'Financials',        members:['DNB.OL','STB.OL','GJF.OL','ENTRA.OL']},
+    {name:'Defensive Consumer',members:['TEL.OL','MOWI.OL','SALM.OL','ORK.OL','VEI.OL']},
+    {name:'Industrials / Mat.',members:['NHY.OL','YAR.OL','KOG.OL','TOM.OL']},
+    {name:'Tech / Renewables', members:['NOD.OL','ATEA.OL','SCATC.OL']},
+    {name:'Global Diversifiers',members:['EUNL.DE','EUNH.DE']},
   ];
   function hrp(){
     // allocate inverse-cluster-vol across clusters, inverse-vol within (softer than 1/σ²)
@@ -320,5 +323,5 @@
 
   g.MERIDIAN = { U, MAP, byT, RISKY, EQUITY, MODELS, RF, BENCH, metrics, PAL,
                  HRP_CLUSTERS, BL_VIEWS, ASOF: D.asof, pathFor, benchPath, rhoOf,
-                 modelById: id => MODELS.find(m=>m.id===id) };
+                 CASH, BOND, modelById: id => MODELS.find(m=>m.id===id) };
 })(window);
