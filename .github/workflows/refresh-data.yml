@@ -34,9 +34,12 @@ jobs:
       - name: Quality gate — refuse to ship broken data
         run: python scripts/validate_data.py
 
+      - name: Log model book changes
+        run: node scripts/diff_books.mjs || echo "diff failed — continuing"
+
       - name: Commit & push if changed
         run: |
-          git add -A assets/ data/
+          git add -A assets/ data/ CHANGES.md
           if git diff --cached --quiet; then
             echo "no data change"
             exit 0

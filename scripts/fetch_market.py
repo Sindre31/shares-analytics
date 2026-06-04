@@ -132,6 +132,10 @@ print("fetching Nordnet fundlist...", file=sys.stderr)
 funds_raw = page_all("fundlist")
 print(f"  {len(funds_raw)} funds", file=sys.stderr)
 
+print("fetching Nordnet etflist...", file=sys.stderr)
+etfs_raw = page_all("etflist")
+print(f"  {len(etfs_raw)} ETFs", file=sys.stderr)
+
 rf = norges_bank_key_rate()
 print(f"risk-free (Norges Bank key rate): {rf}%", file=sys.stderr)
 
@@ -188,9 +192,41 @@ for r in funds_raw:
                   selection=bool(fi.get("fund_nordnet_selection"))),
     ))
 
+etfs = []
+for r in etfs_raw:
+    ii, pi = r.get("instrument_info", {}), r.get("price_info", {})
+    fi, hr = r.get("fund_info", {}) or {}, r.get("historical_returns_info", {}) or {}
+    ei = r.get("exchange_info", {}) or {}
+    if not ii.get("symbol") or not ii.get("instrument_id"):
+        continue
+    country = ei.get("exchange_country") or "?"
+    etfs.append(dict(
+        id=ii["instrument_id"], sym=ii["symbol"], country=country,
+        exch=(ei.get("exchanges") or [country])[0] or country,
+        yt=yahoo_sym(ii["symbol"], country),
+        name=(ii.get("long_name") or ii.get("name") or ii["symbol"]),
+        ccy=ii.get("currency", "?"), isin=ii.get("isin"),
+        px=price_of(r), chg=f(pi.get("diff_pct")) if pi.get("diff_pct") is not None else f(hr.get("yield_1d")),
+        turn=f((pi.get("turnover_normalized") or 0), 0),
+        pe=None, pb=None, ps=None, div=0,
+        owners=(r.get("statistical_info") or {}).get("number_of_owners", 0),
+        slug=(r.get("nnx_info") or {}).get("display_slug"),
+        y={k: f(v, 1) for k, v in hr.items() if isinstance(v, (int, float))},
+        cat=fi.get("fund_category") or fi.get("fund_type") or "ETF",
+        fund=dict(ms=fi.get("fund_ms_rating"), fee=f(fi.get("fund_yearly_fee")),
+                  calcFee=f(fi.get("fund_calculated_fee")), risk=fi.get("fund_raw_risk"),
+                  riskGroup=fi.get("fund_risk_group"), aum=f((fi.get("fund_total_market_value") or 0) / 1e9, 2),
+                  admin=fi.get("fund_branding_company") or fi.get("fund_admin_company"),
+                  type=fi.get("fund_type"), sfdr=fi.get("fund_sfdr_article"),
+                  esg=fi.get("fund_esg_score"), minInv=fi.get("fund_min_investment"),
+                  selection=bool(fi.get("fund_nordnet_selection"))),
+    ))
+
 no_shares = [s for s in shares if s["country"] == "NO"]
 foreign_all = [s for s in shares if s["country"] != "NO" and s["yt"]
                and (s["owners"] or 0) >= FOREIGN_MIN_OWNERS]
+# ETFs join the monthly-history pipeline regardless of country (owners >= 10)
+etf_hist_targets = [s for s in etfs if s["yt"] and (s["owners"] or 0) >= 10]
 foreign_all.sort(key=lambda s: s["owners"] or 0, reverse=True)
 g_cand = foreign_all[:GLOBAL_CAND]
 g_cand_ts = [s["yt"] for s in g_cand]
@@ -386,7 +422,7 @@ core_ids.update({s["id"]: "global" for s in global_core})
 
 # ---------------- 5. remaining foreign monthly history ----------------
 def fetch_foreign_history():
-    targets = [s for s in foreign_rest if s["yt"] not in mrets.columns]
+    targets = [s for s in foreign_rest + etf_hist_targets if s["yt"] not in mrets.columns]
     fmap = {s["yt"]: s for s in targets}
     chunk = 400
     for i in range(0, len(targets), chunk):
@@ -432,6 +468,71 @@ def fetch_foreign_history():
 
 fetch_foreign_history()
 
+# ---- fund NAV history: Yahoo lookup by ISIN for the most-owned funds ----
+FUND_HIST_MAX = 250
+fund_rets = {}   # fund id -> list of monthly returns
+fund_stats = {}  # fund id -> stats dict
+
+
+def fetch_fund_history():
+    cand = sorted([fd for fd in funds if fd["isin"] and (fd["px"] or 0) > 0],
+                  key=lambda x: x["owners"] or 0, reverse=True)[:FUND_HIST_MAX]
+    print(f"fund history: looking up {len(cand)} ISINs on Yahoo...", file=sys.stderr)
+    sym_of = {}
+    for k, fd in enumerate(cand):
+        try:
+            qs = yf.Search(fd["isin"], max_results=1).quotes
+            if qs and qs[0].get("symbol"):
+                sym_of[fd["id"]] = qs[0]["symbol"]
+        except Exception as e:
+            if "429" in str(e) or "Too Many" in str(e):
+                print("  429 on ISIN search — backing off 60s", file=sys.stderr)
+                time.sleep(60)
+        time.sleep(0.25)
+        if k % 50 == 49:
+            print(f"  ...{k + 1}/{len(cand)} ({len(sym_of)} resolved)", file=sys.stderr)
+    print(f"  resolved {len(sym_of)} symbols; downloading monthly NAVs...", file=sys.stderr)
+    ids = list(sym_of.keys())
+    fd_by_id = {fd["id"]: fd for fd in cand}
+    chunk = 50
+    for i in range(0, len(ids), chunk):
+        part = ids[i:i + chunk]
+        ts = [sym_of[j] for j in part]
+        try:
+            h = yf.download(ts, period="10y", interval="1mo", auto_adjust=True, progress=False, threads=True)["Close"]
+        except Exception as e:
+            print(f"  fund chunk failed: {e}", file=sys.stderr)
+            continue
+        if h is None or h.empty:
+            continue
+        if not hasattr(h, "columns"):
+            h = h.to_frame(name=ts[0])
+        for j in part:
+            t = sym_of[j]
+            if t not in h.columns:
+                continue
+            col = h[t].dropna()
+            fd = fd_by_id[j]
+            if len(col) < 13:
+                continue
+            last = float(col.iloc[-1])
+            if last <= 0 or abs(last / fd["px"] - 1) > 0.15:
+                continue  # wrong share class / ccy mismatch
+            rr = col.pct_change().dropna().tail(120)
+            vals = [clean_ret(v) for v in rr.values]
+            if len(vals) < 13:
+                continue
+            fund_rets[j] = vals
+            r36 = np.array(vals[-36:])
+            momv = float(np.prod(1 + np.array(vals[-13:-1])) - 1) * 100
+            fund_stats[j] = dict(beta=None, vol=round(float(r36.std() * math.sqrt(12) * 100), 1),
+                                 mom=round(momv, 1), src="NAV monthly (Yahoo)")
+        time.sleep(1)
+    print(f"  fund NAV history: {len(fund_rets)} funds", file=sys.stderr)
+
+
+fetch_fund_history()
+
 # backfill hidden Nordnet prices for any share covered by the daily batch
 for _s in shares:
     if not (_s["px"] or 0) and _s["yt"] and _s["yt"] in hist.columns:
@@ -465,7 +566,7 @@ data = dict(asof=asof, rf=round(rf, 2), erp=ERP, cash=CASH, bond=BOND, dates=dat
                 oslo=universe_block(U_oslo, bench_block("OBX", "__BENCH__", bench_t, "Oslo Børs OBX", bench_d)),
                 global_=None,  # placeholder replaced below (json key 'global')
             ),
-            counts=dict(shares=len(shares), funds=len(funds), withHistory=0))
+            counts=dict(shares=len(shares), funds=len(funds), etfs=len(etfs), withHistory=0))
 data["universes"]["global"] = universe_block(U_global, bench_block("SPX", "__BENCHG__", "^GSPC", "S&P 500", gbench_d))
 del data["universes"]["global_"]
 
@@ -481,6 +582,10 @@ for fd in funds:
     catalog.append(dict(id=fd["id"], sym=None, name=fd["name"], type="FND",
                         cat=fd["cat"], ccy=fd["ccy"], px=fd["px"], chg=fd["chg"],
                         owners=fd["owners"], inU=None, yt=None, isin=fd["isin"]))
+for e in etfs:
+    catalog.append(dict(id=e["id"], sym=e["sym"], name=e["name"], type="ETF",
+                        cat=f"ETF · {e['cat']}", ccy=e["ccy"], px=e["px"], chg=e["chg"],
+                        owners=e["owners"], inU=None, yt=None, isin=e["isin"]))
 
 # ---------------- 7. detail shards ----------------
 sdir = ROOT / "data" / "s"
@@ -503,7 +608,24 @@ for fd in funds:
     det = dict(id=fd["id"], name=fd["name"], type="FND", cat=fd["cat"], ccy=fd["ccy"],
                isin=fd["isin"], px=fd["px"], chg=fd["chg"], owners=fd["owners"],
                slug=fd["slug"], y=fd["y"], fund=fd["fund"])
+    if fd["id"] in fund_rets:
+        det["rets"] = fund_rets[fd["id"]]
+        det["months"] = len(fund_rets[fd["id"]])
+        det["stats"] = fund_stats.get(fd["id"])
+        with_hist += 1
     shard_data[fd["id"] % SHARDS][str(fd["id"])] = det
+for e in etfs:
+    has_hist = months_of(e["yt"]) > 0 if e["yt"] else False
+    if has_hist:
+        with_hist += 1
+    det = dict(id=e["id"], sym=e["sym"], yt=e["yt"], name=e["name"], type="ETF",
+               cat=f"ETF · {e['cat']}", ccy=e["ccy"], isin=e["isin"], px=e["px"], chg=e["chg"],
+               owners=e["owners"], slug=e["slug"], y=e["y"], fund=e["fund"],
+               ratios=dict(pe=None, pb=None, ps=None, div=0),
+               stats=stats_monthly(e["yt"]) if e["yt"] else None,
+               months=months_of(e["yt"]) if e["yt"] else 0,
+               rets=rets_list(e["yt"]) if has_hist else [])
+    shard_data[e["id"] % SHARDS][str(e["id"])] = det
 for i, sh in enumerate(shard_data):
     (sdir / f"{i}.json").write_text(json.dumps(sh, ensure_ascii=False, allow_nan=False), encoding="utf-8")
 

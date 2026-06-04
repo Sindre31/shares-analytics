@@ -88,6 +88,44 @@
   const EQUITY = U.filter(a=>![CASH,BOND].includes(a.t));
   function capw(list){ return norm(list.map(a=>({t:a.t,raw:a.mcap}))); }
 
+  /* ---------- true mean-variance optimizer (projected gradient) ---------- */
+  // maximize  μ'w − ½(λ/100)·w'Σw   s.t.  Σw = 1,  0 ≤ w ≤ cap
+  // Σ_ij = vol_i·vol_j·ρ_ij (vol in %, ρ from 36m real correlations)
+  function projCapSimplex(v, cap){
+    let lo = -1e4, hi = 1e4;
+    for (let it=0; it<60; it++){
+      const tau = (lo+hi)/2;
+      let s = 0; for (const x of v) s += Math.min(cap, Math.max(0, x - tau));
+      if (s > 1) lo = tau; else hi = tau;
+    }
+    const tau = (lo+hi)/2;
+    return v.map(x => Math.min(cap, Math.max(0, x - tau)));
+  }
+  function optimizeMV(list, mu, lam, cap){
+    const n = list.length, vol = list.map(a=>a.vol);
+    const rows = list.map(a => list.map(b => RHO[a.t][b.t]));
+    function sigW(w){
+      const out = new Array(n);
+      for (let i=0;i<n;i++){ let s=0; const ri=rows[i];
+        for (let j=0;j<n;j++) s += vol[i]*vol[j]*ri[j]*w[j];
+        out[i]=s; }
+      return out;
+    }
+    const maxV = Math.max(...vol);
+    let w = projCapSimplex(mu.map(m => m>0 ? m/100 : 0), cap);
+    let step = 50 / (lam * maxV * maxV + 1);
+    for (let it=0; it<250; it++){
+      const sw = sigW(w);
+      const g = mu.map((m,i) => m - (lam/100)*sw[i]);
+      w = projCapSimplex(w.map((x,i) => x + step*g[i]), cap);
+      if (it === 120) step /= 4; // anneal
+    }
+    const sw = sigW(w);
+    const utility = w.reduce((s,x,i)=>s + x*mu[i], 0) - 0.5*(lam/100)*w.reduce((s,x,i)=>s + x*sw[i], 0);
+    const weights = norm(list.map((a,i)=>({t:a.t, raw: w[i] > 0.002 ? w[i] : 0})));
+    return { weights, utility };
+  }
+
   /* ---------- model compute functions ---------- */
   // Each returns { weights:[{t,w}], extras:[{k,v}], cash?:number }
 
@@ -114,17 +152,10 @@
     return { weights:w, extras:[{k:'Screen',v:'P/E·P/B·Yield'},{k:'Held',v:K+' names'},{k:'Margin of safety',v:'≥ 25%'}] };
   }
 
-  function minv(s){ // minimum variance, inverse-variance with weight cap
+  function minv(s){ // true minimum variance: min w'Σw with weight cap (real covariance)
     const cap = (s.cap ?? 20)/100;
-    let w = norm(RISKY.map(a=>({t:a.t,raw:1/(a.vol*a.vol)})));
-    for (let it=0; it<6; it++){ // iterative cap
-      let over=0, room=0;
-      w.forEach(x=>{ if(x.w>cap){ over+=x.w-cap; x.w=cap; x.capped=true;} });
-      const free = w.filter(x=>!x.capped); const fs = free.reduce((a,x)=>a+x.w,0)||1;
-      if (over>1e-6) free.forEach(x=>x.w+=over*(x.w/fs));
-    }
-    w = w.sort((a,b)=>b.w-a.w);
-    return { weights:w, extras:[{k:'Objective',v:'min σ²p'},{k:'Max weight',v:(cap*100).toFixed(0)+'%'},{k:'Long-only',v:'Yes'}] };
+    const r = optimizeMV(RISKY, RISKY.map(()=>0), 400, cap);
+    return { weights:r.weights, extras:[{k:'Objective',v:'min σ²p'},{k:'Max weight',v:(cap*100).toFixed(0)+'%'},{k:'Solver',v:'Projected gradient'}] };
   }
 
   function rp(s){ // risk parity (inverse vol) scaled to target vol via cash sleeve
@@ -137,12 +168,12 @@
     return { weights:w.sort((a,b)=>b.w-a.w), cash, extras:[{k:'Risk budget',v:'Equal ERC'},{k:'Target σ',v:target.toFixed(1)+'%'},{k:'Invested',v:(k*100).toFixed(0)+'%'}] };
   }
 
-  function mvo(s){ // mean-variance utility maximization
-    const lam = s.lambda ?? 2.0;
-    const w = norm(RISKY.map(a=>({t:a.t, raw: (a.er-RF) - 0.5*lam*(a.vol*a.vol)/100 })));
-    if (!w.length) // no risky asset clears the utility hurdle -> hold cash
-      return { weights:[{t:CASH,w:1}], cash:1, extras:[{k:'Objective',v:'max  μ−½λσ²'},{k:'Risk aversion λ',v:lam.toFixed(1)},{k:'Frontier',v:'All cash — hurdle unmet'}] };
-    return { weights:w, extras:[{k:'Objective',v:'max  μ−½λσ²'},{k:'Risk aversion λ',v:lam.toFixed(1)},{k:'Frontier',v:'Tangency tilt'}] };
+  function mvo(s){ // true mean-variance: max μ'w − ½λ·w'Σw on the real covariance
+    const lam = s.lambda ?? 2.0, cap = 0.25;
+    const r = optimizeMV(RISKY, RISKY.map(a=>a.er-RF), lam, cap);
+    if (r.utility <= 0 || !r.weights.length) // nothing clears the hurdle -> hold cash
+      return { weights:[{t:CASH,w:1}], cash:1, extras:[{k:'Objective',v:'max  μ−½λ wᵀΣw'},{k:'Risk aversion λ',v:lam.toFixed(1)},{k:'Frontier',v:'All cash — hurdle unmet'}] };
+    return { weights:r.weights, extras:[{k:'Objective',v:'max  μ−½λ wᵀΣw'},{k:'Risk aversion λ',v:lam.toFixed(1)},{k:'Max weight',v:(cap*100).toFixed(0)+'%'},{k:'Solver',v:'Projected gradient'}] };
   }
 
   function capm(s){ // market portfolio + risk-free (two-fund separation)
@@ -158,31 +189,33 @@
   // Black-Litterman views (manager tilts)
   const ALL_VIEWS = {
     oslo: [
-      {t:'KOG.OL',  dir:'OVER', f:1.7, txt:'European defence spending supercycle'},
-      {t:'SALM.OL', dir:'OVER', f:1.3, txt:'Tight salmon supply supports prices'},
-      {t:'DNB.OL',  dir:'OVER', f:1.2, txt:'Resilient NII, strong capital returns'},
-      {t:'EQNR.OL', dir:'UNDER',f:0.6, txt:'Softer oil & gas price deck −2.0%'},
-      {t:'TEL.OL',  dir:'UNDER',f:0.75,txt:'Mature telecom growth headwind'},
+      {t:'KOG.OL',  dir:'OVER', f:1.7, q:+3.0, txt:'European defence spending supercycle'},
+      {t:'SALM.OL', dir:'OVER', f:1.3, q:+1.5, txt:'Tight salmon supply supports prices'},
+      {t:'DNB.OL',  dir:'OVER', f:1.2, q:+1.0, txt:'Resilient NII, strong capital returns'},
+      {t:'EQNR.OL', dir:'UNDER',f:0.6, q:-2.0, txt:'Softer oil & gas price deck −2.0%'},
+      {t:'TEL.OL',  dir:'UNDER',f:0.75,q:-1.0, txt:'Mature telecom growth headwind'},
     ],
     global: [
-      {t:'NVDA',     dir:'OVER', f:1.7, txt:'AI capex cycle → semis outperform'},
-      {t:'MSFT',     dir:'OVER', f:1.2, txt:'Cloud + AI monetization compounding'},
-      {t:'NOVO-B.CO',dir:'OVER', f:1.3, txt:'GLP-1 franchise momentum'},
-      {t:'TSLA',     dir:'UNDER',f:0.7, txt:'EV margin pressure, competition'},
-      {t:'AAPL',     dir:'UNDER',f:0.85,txt:'Hardware cycle maturity'},
+      {t:'NVDA',     dir:'OVER', f:1.7, q:+3.0, txt:'AI capex cycle → semis outperform'},
+      {t:'MSFT',     dir:'OVER', f:1.2, q:+1.0, txt:'Cloud + AI monetization compounding'},
+      {t:'NOVO-B.CO',dir:'OVER', f:1.3, q:+1.5, txt:'GLP-1 franchise momentum'},
+      {t:'TSLA',     dir:'UNDER',f:0.7, q:-2.0, txt:'EV margin pressure, competition'},
+      {t:'AAPL',     dir:'UNDER',f:0.85,q:-1.0, txt:'Hardware cycle maturity'},
     ],
   };
   const BL_VIEWS = ALL_VIEWS[UKEY].filter(v=>MAP[v.t]); // only views on names actually in the universe
-  function bl(s){
+  function bl(s){ // Black-Litterman: implied equilibrium prior + view shifts, then optimize
     const c = (s.conf ?? 40)/100;
-    const eqm = capw(RISKY);
-    const tiltMap = Object.fromEntries(BL_VIEWS.map(v=>[v.t,v.f]));
-    const tilted = norm(eqm.map(x=>({t:x.t, raw: x.w*(tiltMap[x.t]||1)})));
-    const tMap = Object.fromEntries(tilted.map(x=>[x.t,x.w]));
-    const eMap = Object.fromEntries(eqm.map(x=>[x.t,x.w]));
-    const blend = RISKY.map(a=>({t:a.t, raw:(1-c)*(eMap[a.t]||0) + c*(tMap[a.t]||0)}));
-    return { weights:norm(blend), views:BL_VIEWS,
-             extras:[{k:'Prior',v:'Mkt equilibrium'},{k:'View confidence',v:(c*100).toFixed(0)+'%'},{k:'Active views',v:BL_VIEWS.length}] };
+    const wm = Object.fromEntries(capw(RISKY).map(x=>[x.t,x.w]));
+    // implied excess returns π = δ·Σ·w_mkt, δ calibrated so π'w_mkt = ERP
+    const sw = RISKY.map(a => RISKY.reduce((s2,b)=> s2 + a.vol*b.vol*RHO[a.t][b.t]*(wm[b.t]||0), 0));
+    const mktVar = RISKY.reduce((s2,a,i)=> s2 + (wm[a.t]||0)*sw[i], 0) || 1;
+    const delta = (D.erp || 5) / mktVar;
+    const qMap = Object.fromEntries(BL_VIEWS.map(v=>[v.t, v.q || 0]));
+    const mu = RISKY.map((a,i)=> delta*sw[i] + c*(qMap[a.t]||0)); // posterior excess μ
+    const r = optimizeMV(RISKY, mu, 2.5, 0.25);
+    return { weights:r.weights, views:BL_VIEWS,
+             extras:[{k:'Prior',v:'Implied equilibrium (δΣw)'},{k:'View confidence',v:(c*100).toFixed(0)+'%'},{k:'Active views',v:BL_VIEWS.length},{k:'Solver',v:'Projected gradient · λ 2.5'}] };
   }
 
   function ff5(s){ // factor tilts

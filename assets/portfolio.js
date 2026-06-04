@@ -35,8 +35,11 @@
       const d = details[h.id];
       if (!d) return null;
       const px = d.px || 0;
-      const valNOK = h.qty * px * (FX[d.ccy] || 1);
-      return { id: h.id, qty: h.qty, d, px, valNOK };
+      const fxr = FX[d.ccy] || 1;
+      const valNOK = h.qty * px * fxr;
+      const costNOK = h.gav > 0 ? h.qty * h.gav * fxr : null;
+      return { id: h.id, qty: h.qty, gav: h.gav, d, px, valNOK, costNOK,
+               pnlNOK: costNOK != null ? valNOK - costNOK : null };
     }).filter(Boolean);
   }
 
@@ -53,6 +56,7 @@
       isin: head.findIndex(h => h.includes('isin')),
       name: head.findIndex(h => h.includes('verdipapir') || h.includes('navn') || h.includes('name') || h.includes('instrument')),
       qty: head.findIndex(h => h === 'antall' || h.includes('antall') || h.includes('quantity') || h.includes('qty') || h.includes('beholdning')),
+      gav: head.findIndex(h => h === 'gav' || h.includes('gav') || h.includes('kostpris') || h.includes('snittkurs') || h.includes('avg')),
     };
     const hasHeader = idx.isin >= 0 || idx.qty >= 0;
     const dataLines = hasHeader ? lines.slice(1) : lines;
@@ -66,11 +70,13 @@
         const mfree = line.match(/^(\S+)[\s;,]+([\d\s.,]+)$/);
         if (mfree) c = CAT.find(x => (x.sym || '').toUpperCase() === mfree[1].toUpperCase());
       }
-      const rawQty = idx.qty >= 0 ? cells[idx.qty] : (line.match(/([\d\s.,]+)\s*$/) || [])[1];
-      const qty = rawQty ? parseFloat(rawQty.replace(/\s/g, '').replace(',', '.')) : NaN;
+      const num = s2 => s2 ? parseFloat(String(s2).replace(/\s/g, '').replace(',', '.')) : NaN;
+      const qty = num(idx.qty >= 0 ? cells[idx.qty] : (line.match(/([\d\s.,]+)\s*$/) || [])[1]);
+      const gav = idx.gav >= 0 ? num(cells[idx.gav]) : NaN;
       if (c && qty > 0) {
         const ex = holdings.find(h => h.id === c.id);
-        if (ex) ex.qty = qty; else holdings.push({ id: c.id, qty });
+        if (ex) { ex.qty = qty; if (gav > 0) ex.gav = gav; }
+        else holdings.push(gav > 0 ? { id: c.id, qty, gav } : { id: c.id, qty });
         added++;
       } else if (line) {
         missed.push(line.slice(0, 60));
@@ -142,6 +148,9 @@
     const vol = estVol(rows);
     const hhi = rows.reduce((s, r) => s + Math.pow(r.valNOK / tot, 2), 0);
     const day = rows.reduce((s, r) => s + (r.d.chg != null ? r.valNOK * r.d.chg / 100 : 0), 0);
+    const hasGav = rows.some(r => r.pnlNOK != null);
+    const pnl = rows.reduce((s, r) => s + (r.pnlNOK || 0), 0);
+    const cost = rows.reduce((s, r) => s + (r.costNOK || 0), 0);
 
     root.innerHTML = `
       <div class="wrap page">
@@ -156,8 +165,9 @@
           </div>
         </div>
 
-        <div class="kpis fade-in">
+        <div class="kpis fade-in" ${hasGav ? 'style="grid-template-columns:repeat(5,1fr)"' : ''}>
           <div class="kpi"><div class="k">Total Value</div><div class="v">${fmtNOK(tot)}</div><div class="sub">at last close · FX→NOK</div></div>
+          ${hasGav ? `<div class="kpi"><div class="k">Unrealized P&L</div><div class="v ${pnl >= 0 ? 'up' : 'down'}">${pnl >= 0 ? '+' : '−'}${fmtNOK(Math.abs(pnl)).slice(3)}</div><div class="sub">${pct(cost ? pnl / cost * 100 : null, 1)} vs GAV</div></div>` : ''}
           <div class="kpi"><div class="k">1-Day P&L</div><div class="v ${day >= 0 ? 'up' : 'down'}">${day >= 0 ? '+' : '−'}${fmtNOK(Math.abs(day)).slice(3)}</div><div class="sub">${pct(tot ? day / tot * 100 : null, 2)}</div></div>
           <div class="kpi"><div class="k">Est. Volatility</div><div class="v">${vol != null ? vol.toFixed(1) + '%' : '—'}</div><div class="sub">3y monthly · ann. σ</div></div>
           <div class="kpi"><div class="k">Eff. Holdings</div><div class="v">${(1 / hhi).toFixed(1)}</div><div class="sub">inverse HHI</div></div>
@@ -175,13 +185,15 @@
             <div class="panel ${perf ? 'mt16' : ''}">
               <div class="panel-head">HOLDINGS<div class="right"><span class="mono dim">${rows.length} POSITIONS</span></div></div>
               <div class="panel-body tight"><table class="tbl">
-                <thead><tr><th class="tleft">Instrument</th><th>Qty</th><th>Last</th><th>1D</th><th>Value (NOK)</th><th>Weight</th><th></th></tr></thead>
+                <thead><tr><th class="tleft">Instrument</th><th>Qty</th><th>GAV</th><th>Last</th><th>1D</th>${hasGav ? '<th>P&L</th>' : ''}<th>Value (NOK)</th><th>Weight</th><th></th></tr></thead>
                 <tbody>${rows.map(r => `
                   <tr>
                     <td class="tleft"><a class="sym-cell" href="asset.html?id=${r.id}"><span class="sym-chip" style="background:${r.d.type === 'FND' ? 'var(--info)' : 'var(--up-dim)'}"></span><span><span class="mono">${esc(r.d.sym || 'FOND')}</span> <span class="asset-name">${esc(r.d.name)}</span></span></a></td>
-                    <td><input type="number" class="qty mono" data-id="${r.id}" value="${r.qty}" min="0" step="any" style="width:84px;background:var(--bg);border:1px solid var(--line-2);color:var(--fg);padding:2px 6px;border-radius:2px;text-align:right"></td>
+                    <td><input type="number" class="qty mono" data-id="${r.id}" value="${r.qty}" min="0" step="any" style="width:76px;background:var(--bg);border:1px solid var(--line-2);color:var(--fg);padding:2px 6px;border-radius:2px;text-align:right"></td>
+                    <td><input type="number" class="gav mono" data-id="${r.id}" value="${r.gav || ''}" placeholder="—" min="0" step="any" style="width:70px;background:var(--bg);border:1px solid var(--line-soft);color:var(--fg-dim);padding:2px 6px;border-radius:2px;text-align:right"></td>
                     <td class="dim">${r.px > 0 ? r.px.toFixed(2) : '—'} <span class="mute" style="font-size:9px">${esc(r.d.ccy)}</span></td>
                     <td class="${(r.d.chg || 0) >= 0 ? 'up' : 'down'}">${pct(r.d.chg, 2)}</td>
+                    ${hasGav ? `<td class="${(r.pnlNOK || 0) >= 0 ? 'up' : 'down'}">${r.pnlNOK != null ? (r.pnlNOK >= 0 ? '+' : '−') + fmtNOK(Math.abs(r.pnlNOK)).slice(3) : '—'}</td>` : ''}
                     <td>${fmtNOK(r.valNOK)}</td>
                     <td><div class="wbar"><i style="width:${Math.min(100, r.valNOK / tot * 100 * 2.2)}%"></i><span>${(r.valNOK / tot * 100).toFixed(1)}%</span></div></td>
                     <td><button class="ibtn rm" data-id="${r.id}" title="Remove" style="font-style:normal">✕</button></td>
@@ -243,6 +255,10 @@
     document.querySelectorAll('.qty').forEach(inp => inp.addEventListener('change', () => {
       const h = holdings.find(x => x.id === +inp.dataset.id);
       if (h) { h.qty = Math.max(0, parseFloat(inp.value) || 0); save(holdings); render(); }
+    }));
+    document.querySelectorAll('.gav').forEach(inp => inp.addEventListener('change', () => {
+      const h = holdings.find(x => x.id === +inp.dataset.id);
+      if (h) { const v = parseFloat(inp.value); if (v > 0) h.gav = v; else delete h.gav; save(holdings); render(); }
     }));
     document.querySelectorAll('.rm').forEach(b => b.addEventListener('click', () => {
       holdings = holdings.filter(x => x.id !== +b.dataset.id); save(holdings); render();

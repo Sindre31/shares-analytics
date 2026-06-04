@@ -296,9 +296,12 @@
     wireRows();
   }
 
-  /* ---------- FUND view ---------- */
+  /* ---------- FUND / ETF view ---------- */
   function renderFund(d) {
     const f = d.fund || {};
+    const kind = d.type === 'ETF' ? 'ETF' : 'FOND';
+    const realRets = (d.rets || []).slice(-Math.min(d.months || 0, (d.rets || []).length));
+    const perf = realRets.length >= 13 ? perfBlock({ ...d, rets: realRets, sym: d.sym || d.name }, 'var(--info)') : { html: '', wire: () => {} };
     document.title = `${d.name} — MERIDIAN PMX`;
     const stars = f.ms ? '★'.repeat(f.ms) + '<span class="mute">' + '★'.repeat(5 - f.ms) + '</span>' : '—';
     const bars = ['yield_1m|1M', 'yield_3m|3M', 'yield_ytd|YTD', 'yield_1y|1Y', 'yield_3y|3Y', 'yield_5y|5Y', 'yield_10y|10Y']
@@ -308,7 +311,7 @@
       <div class="wrap page">
         <div class="model-hero fade-in">
           <div class="mh-left">
-            <div class="mh-no mono" style="color:var(--info);font-size:18px;max-width:120px;line-height:1.25">FOND</div>
+            <div class="mh-no mono" style="color:var(--info);font-size:18px;max-width:120px;line-height:1.25">${kind}</div>
             <div>
               <h1 class="mh-title">${esc(d.name)}</h1>
               <p class="mh-tag">${esc(d.cat)} · ${esc(d.ccy)} · NAV ${d.px > 0 ? d.px.toFixed(2) : '—'} ${fmtChg(d.chg)}
@@ -316,7 +319,7 @@
             </div>
           </div>
           <div class="mh-right">
-            <span class="badge b">○ FUND — OUTSIDE MODEL UNIVERSE</span>
+            <span class="badge b">○ ${kind} — OUTSIDE MODEL UNIVERSE</span>
             ${f.selection ? '<span class="badge g">NORDNET SELECTION</span>' : ''}
             ${nordnetBtn(d)}
           </div>
@@ -335,12 +338,14 @@
 
         <div class="model-grid mt16">
           <div class="main">
-            <div class="panel">
+            ${perf.html}
+            <div class="panel ${perf.html ? 'mt16' : ''}">
               <div class="panel-head">RETURNS · NORDNET DATA</div>
               <div class="panel-body"><div id="fundBars"></div>
-                <div class="map-note mono">Nordnet does not expose fund NAV history publicly — periods are cumulative returns as reported. ${esc(M.BENCH.code)} 1Y for reference: ${pct((M.RETS[M.BENCH.ticker].slice(-12).reduce((a, r) => a * (1 + r), 1) - 1) * 100)}</div>
+                <div class="map-note mono">${perf.html ? 'Chart from NAV history via Yahoo (ISIN-matched).' : 'No public NAV history — periods are cumulative returns as reported.'} ${esc(M.BENCH.code)} 1Y for reference: ${pct((M.RETS[M.BENCH.ticker].slice(-12).reduce((a, r) => a * (1 + r), 1) - 1) * 100)}</div>
               </div>
             </div>
+            ${realRets.length >= 24 ? screeningPanel(d) : ''}
             ${notInUniversePanel(d)}
           </div>
           <div class="side">
@@ -361,6 +366,12 @@
         </div>
       </div>`;
     document.getElementById('fundBars').innerHTML = C.hbars(bars, { w: 640, labW: 56, rowH: 24, signed: true });
+    perf.wire();
+    const corrSlot = document.createElement('div');
+    if (realRets.length >= 24) {
+      const side = document.querySelector('.side');
+      if (side) { side.insertAdjacentHTML('beforeend', corrPanel(realRets)); }
+    }
     wireRows();
   }
 
@@ -402,7 +413,7 @@
     if (id) {
       try {
         const d = await fetchDetail(id);
-        if (d.type === 'FND') renderFund(d); else renderShare(d);
+        if (d.type === 'FND' || d.type === 'ETF') renderFund(d); else renderShare(d);
       } catch (e) {
         renderUnknown('UNKNOWN INSTRUMENT · ' + id);
       }
