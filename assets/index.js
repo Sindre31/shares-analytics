@@ -47,6 +47,8 @@
             <div class="hero-cta">
               <a class="btn primary" href="#directory">▸ BROWSE MODELS</a>
               <a class="btn" href="#frontier">▸ RISK / RETURN MAP</a>
+              <a class="btn" href="compare.html">⇄ COMPARE TWO BOOKS</a>
+              <a class="btn" href="portfolio.html">◈ MY BOOK</a>
             </div>
           </div>
           <div class="hero-side">

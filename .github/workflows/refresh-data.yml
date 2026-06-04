@@ -12,6 +12,7 @@ permissions:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
 
@@ -24,6 +25,14 @@ jobs:
 
       - name: Fetch market data
         run: python scripts/fetch_market.py
+
+      - name: Top-up rate-limited histories
+        run: |
+          python scripts/repair_foreign.py || echo "repair_foreign failed — continuing"
+          python scripts/repair_px0.py || echo "repair_px0 failed — continuing"
+
+      - name: Quality gate — refuse to ship broken data
+        run: python scripts/validate_data.py
 
       - name: Commit & push if changed
         run: |

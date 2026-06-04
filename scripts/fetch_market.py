@@ -227,6 +227,7 @@ mrets = monthly.pct_change().dropna(how="all").tail(120)
 daily = hist.pct_change().tail(504)
 bench_d = daily["__BENCH__"].dropna()
 gbench_d = daily["__BENCHG__"].dropna()
+gbench_m = mrets["__BENCHG__"].dropna()
 
 # FX -> NOK for market-cap comparability
 fxmap = {"NOK": 1.0}
@@ -298,7 +299,18 @@ def stats_monthly(yt):
     vol = float(r.std() * math.sqrt(12) * 100)
     rr = f_mrets[yt]
     mom = float((np.prod(1 + rr.iloc[-13:-1].values) - 1) * 100) if len(rr) >= 13 else 0.0
-    return dict(beta=None, vol=round(vol, 1), mom=round(mom, 1), src="3y monthly")
+    # beta vs the global benchmark — align by calendar month (yahoo 1mo rows are
+    # month-start labelled, our resampled bench is month-end labelled)
+    beta = None
+    try:
+        a = r.copy(); a.index = a.index.to_period("M")
+        b = gbench_m.copy(); b.index = b.index.to_period("M")
+        al = a.align(b, join="inner")
+        if len(al[0]) >= 12 and float(np.var(al[1])) > 0:
+            beta = round(float(np.cov(al[0], al[1])[0, 1] / np.var(al[1])), 2)
+    except Exception:
+        pass
+    return dict(beta=beta, vol=round(vol, 1), mom=round(mom, 1), src="3y monthly")
 
 
 def build_member(s, bd):
@@ -420,6 +432,15 @@ def fetch_foreign_history():
 
 fetch_foreign_history()
 
+# backfill hidden Nordnet prices for any share covered by the daily batch
+for _s in shares:
+    if not (_s["px"] or 0) and _s["yt"] and _s["yt"] in hist.columns:
+        _col = hist[_s["yt"]].dropna()
+        if len(_col):
+            _s["px"] = round(float(_col.iloc[-1]), 2)
+            if _s.get("chg") is None and len(_col) > 1:
+                _s["chg"] = round(float(_col.iloc[-1] / _col.iloc[-2] - 1) * 100, 2)
+
 
 def bench_block(code, ticker_col, source, name, bd):
     bvol = float(bd.std() * math.sqrt(252) * 100)
@@ -439,6 +460,7 @@ def universe_block(U, bench):
 asof = dt.date.today().isoformat()
 dates = [d.strftime("%Y-%m") for d in mrets.index]
 data = dict(asof=asof, rf=round(rf, 2), erp=ERP, cash=CASH, bond=BOND, dates=dates,
+            fx={k: round(v, 4) for k, v in fxmap.items()},
             universes=dict(
                 oslo=universe_block(U_oslo, bench_block("OBX", "__BENCH__", bench_t, "Oslo Børs OBX", bench_d)),
                 global_=None,  # placeholder replaced below (json key 'global')
@@ -453,11 +475,12 @@ for s in shares:
     inu = core_ids.get(s["id"])
     catalog.append(dict(id=s["id"], sym=s["sym"], name=s["name"], type="EQ",
                         cat=f"Aksje · {s['exch']}", ccy=s["ccy"], px=s["px"], chg=s["chg"],
-                        owners=s["owners"], inU=inu, yt=s["yt"] if inu else None))
+                        owners=s["owners"], inU=inu, yt=s["yt"] if inu else None,
+                        isin=s["isin"]))
 for fd in funds:
     catalog.append(dict(id=fd["id"], sym=None, name=fd["name"], type="FND",
                         cat=fd["cat"], ccy=fd["ccy"], px=fd["px"], chg=fd["chg"],
-                        owners=fd["owners"], inU=None, yt=None))
+                        owners=fd["owners"], inU=None, yt=None, isin=fd["isin"]))
 
 # ---------------- 7. detail shards ----------------
 sdir = ROOT / "data" / "s"

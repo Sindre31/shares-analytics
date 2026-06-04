@@ -173,6 +173,12 @@ a { color: inherit; text-decoration: none; }
 .th-stat .k { font-size: 8.5px; letter-spacing: 0.14em; color: var(--fg-mute); text-transform: uppercase; }
 .th-stat .v { font-variant-numeric: tabular-nums; }
 .th-clock { min-width: 96px; }
+/* small screens: keep brand, nav scroll, search and universe toggle — drop stats */
+@media (max-width: 860px){
+  .th-stat { display: none; }
+  .th-right .th-stat:first-child { display: flex; } /* universe toggle stays */
+  .th-brand .sub { display: none; }
+}
 
 /* ============================================================
    TICKER TAPE

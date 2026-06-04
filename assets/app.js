@@ -12,10 +12,12 @@
     const pre = ctx === 'index' ? '' : '../';
     return {
       index: pre + 'index.html',
+      compare: pre + 'compare.html',
+      portfolio: pre + 'portfolio.html',
       model: m => ctx === 'index' ? `models/${fileFor(m)}` : fileFor(m),
       asset: t => `${pre}asset.html?t=${encodeURIComponent(t)}`,   // by yahoo ticker (model universe)
       assetId: id => `${pre}asset.html?id=${encodeURIComponent(id)}`, // by Nordnet id (full catalog)
-      data: pre + 'data/i/',
+      shard: id => `${pre}data/s/${(+id) % 256}.json`,
     };
   }
 
@@ -39,6 +41,8 @@
       <nav class="th-nav">
         <a href="${P.index}" class="${activeId === 'home' ? 'active' : ''}">◴ OVERVIEW</a>
         ${nav}
+        <a href="${P.compare}" class="${activeId === 'compare' ? 'active' : ''}">⇄ COMPARE</a>
+        <a href="${P.portfolio}" class="${activeId === 'portfolio' ? 'active' : ''}">◈ MY BOOK</a>
       </nav>
       <div class="th-search">
         <input id="globalSearch" type="text" placeholder="⌕ SEARCH SHARE" autocomplete="off" spellcheck="false">

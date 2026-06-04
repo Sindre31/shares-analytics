@@ -135,13 +135,26 @@
       grid+=`<line x1="${xx}" x2="${xx}" y1="${padT}" y2="${padT+ih}" stroke="${css('--line-soft')}"/>
              <text x="${xx}" y="${h-padB+16}" text-anchor="middle" font-family="${MF}" font-size="9.5" fill="${css('--fg-faint')}">${xval.toFixed(1)}</text>`;
     }
+    // greedy label de-overlap: nudge colliding labels vertically
+    const placed=[];
+    function labelY(lx, cy){
+      const w=36, hh=11;
+      let yy=cy+3.5, tries=0, dir=1;
+      while (tries<10 && placed.some(b=>Math.abs(b.x-lx)<w && Math.abs(b.y-yy)<hh)){
+        tries++; dir=-dir;
+        yy = cy+3.5 + dir*Math.ceil(tries/2)*hh;
+      }
+      placed.push({x:lx,y:yy});
+      return yy;
+    }
     let dots='';
     points.forEach((p,i)=>{
       const cx=X(p.x), cy=Y(p.y), r=p.r||5;
+      const ly=labelY(cx+r+5, cy);
       dots+=`<g class="sc-pt" data-code="${esc(p.code||'')}" style="cursor:pointer">
         <circle cx="${cx}" cy="${cy}" r="${r+6}" fill="${p.color}" opacity="0.10"/>
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="${p.color}" stroke="${css('--bg')}" stroke-width="1.5"/>
-        <text x="${cx+r+5}" y="${cy+3.5}" font-family="${MF}" font-size="10" fill="${css('--fg-dim')}">${esc(p.code||'')}</text>
+        <text x="${cx+r+5}" y="${ly}" font-family="${MF}" font-size="10" fill="${css('--fg-dim')}">${esc(p.code||'')}</text>
         <title>${esc(p.label)} — vol ${p.x.toFixed(1)}% / ret ${p.y.toFixed(1)}%</title></g>`;
     });
     const axt = `<text x="${padL+iw/2}" y="${h-4}" text-anchor="middle" font-family="${MF}" font-size="9.5" letter-spacing="1.5" fill="${css('--fg-mute')}">${esc(opts.xlabel||'VOLATILITY %')}</text>
