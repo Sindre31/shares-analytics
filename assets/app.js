@@ -45,6 +45,13 @@
         <div class="th-search-dd" id="searchDD"></div>
       </div>
       <div class="th-right">
+        <div class="th-stat" style="justify-content:center;min-width:0">
+          <span class="k">Universe</span>
+          <span class="seg" style="margin-top:2px">
+            <button ${M.UKEY === 'oslo' ? 'class="on"' : ''} onclick="MER.setUniverse('oslo')" title="100 most-traded Oslo Børs shares">OSL</button>
+            <button ${M.UKEY === 'global' ? 'class="on"' : ''} onclick="MER.setUniverse('global')" title="60 most-owned global shares on Nordnet">GLB</button>
+          </span>
+        </div>
         <div class="th-stat"><span class="k">${M.BENCH.code} INDEX</span><span class="v" id="hs-bench">${M.BENCH.px.toLocaleString('en-US',{minimumFractionDigits:2})} <span class="${M.BENCH.chg>=0?'up':'down'}">${M.BENCH.chg>=0?'▲':'▼'}</span></span></div>
         <div class="th-stat"><span class="k">Risk-free</span><span class="v">${M.RF.toFixed(2)}%</span></div>
         <div class="th-stat th-clock"><span class="k">Session</span><span class="v" id="hs-clock">––:––:––</span></div>
@@ -74,6 +81,12 @@
       <div class="fseg">${extra || 'DATA: REAL · AS OF ' + M.ASOF}</div>
       <div class="fseg" style="margin-left:auto">MERIDIAN PMX v2.4 · © 2026</div>
     </footer>`;
+  }
+
+  /* ---------- universe selection ---------- */
+  function setUniverse(key) {
+    try { localStorage.setItem('mer_universe', key === 'global' ? 'global' : 'oslo'); } catch (e) {}
+    location.reload();
   }
 
   /* ---------- lazy catalog (13k instruments — fetched on first search) ---------- */
@@ -440,5 +453,5 @@
     recompute();
   }
 
-  window.MER = { header, ticker, footer, startClock, initSearch, loadCatalog, openInfo, closeInfo, renderModel, paths, fileFor, dayChange, lastPx };
+  window.MER = { header, ticker, footer, startClock, initSearch, loadCatalog, setUniverse, openInfo, closeInfo, renderModel, paths, fileFor, dayChange, lastPx };
 })();

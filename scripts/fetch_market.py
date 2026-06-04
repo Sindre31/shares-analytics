@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 """Import the full Nordnet catalog -> assets/data.js, assets/catalog.json, data/s/*.json
 
-- ALL shares on Nordnet (~12,200: NO/US/CA/SE/DE/FI/DK/...) + ALL funds (~880).
-- Yahoo price history: every Norwegian share (11y daily) + the most-owned
-  foreign shares (10y monthly, price-validated against Nordnet's last).
-- Model universe = top N Oslo Bors shares by traded value with >=36 months
-  history and sane volatility, plus UCITS ETF diversifiers.
-- Benchmark OBX, risk-free Norges Bank key rate.
-
-Outputs:
-  assets/data.js        model universe + benchmark (loaded on every page)
-  assets/catalog.json   search index, all instruments (lazy-loaded on first search)
-  data/s/<id%256>.json  detail shards: id -> instrument detail
+- ALL shares on Nordnet (~12,200) + ALL funds (~880) -> searchable catalog + detail shards.
+- TWO model universes:
+    oslo:   the 100 most-traded Oslo Bors shares (>=36mo history, vol<=80%) + UCITS ETFs,
+            benchmark OBX
+    global: the 60 most-owned foreign shares on Nordnet (same sanity filters) + UCITS ETFs,
+            benchmark S&P 500 (^GSPC)
+- Yahoo history: model-universe members + all NO shares daily 11y; other most-owned
+  foreign shares monthly 10y (price-validated against Nordnet).
+- Risk-free: Norges Bank key rate (NOK investor perspective for both universes).
 
 Usage:
     python3 -m venv .venv && .venv/bin/pip install yfinance numpy
@@ -27,15 +25,17 @@ NN = "https://www.nordnet.no/api/2"
 HDRS = {"Accept": "application/json", "client-id": "NEXT",
         "User-Agent": "Mozilla/5.0 (compatible; meridian-pmx/1.0; personal project)"}
 
-MODEL_N = 60                   # liquid Oslo Bors shares in the model universe
-FOREIGN_HIST_MAX = 3000        # most-owned foreign shares to fetch history for
+OSLO_N = 100                   # most-traded Oslo Bors shares in the oslo universe
+GLOBAL_N = 60                  # most-owned foreign shares in the global universe
+GLOBAL_CAND = 140              # candidates to download daily history for
+FOREIGN_HIST_MAX = 3000        # most-owned foreign shares to fetch monthly history for
 FOREIGN_MIN_OWNERS = 30
 SHARDS = 256
 ERP = 5.0
 W_CAPM, W_HIST = 0.55, 0.45
 HIST_CLIP = (-5.0, 35.0)
+MAX_VOL = 80.0
 
-# Nordnet exchange_country -> Yahoo suffix
 YSUF = {"NO": ".OL", "SE": ".ST", "DK": ".CO", "FI": ".HE", "DE": ".DE", "US": "",
         "CA": ".TO", "FR": ".PA", "NL": ".AS", "BE": ".BR", "IT": ".MI", "ES": ".MC",
         "PT": ".LS", "AT": ".VI", "CH": ".SW", "GB": ".L", "IE": ".IR"}
@@ -46,6 +46,7 @@ ETFS = [
     dict(t="XEON.DE", name="Xtrackers EUR Overnight (UCITS)",   sector="Cash",          ccy="EUR", qual=1.00, pe=0,    pb=0),
 ]
 CASH, BOND = "XEON.DE", "EUNH.DE"
+ETF_AUM_EUR = {"EUNL.DE": 95e9, "EUNH.DE": 5.5e9, "XEON.DE": 22e9}
 
 
 def get(url):
@@ -100,6 +101,26 @@ def yahoo_sym(sym, country):
     if country == "US":
         s = s.replace(".", "-")
     return s + YSUF[country]
+
+
+def clean_ret(v):
+    v = float(v)
+    return round(v, 4) if math.isfinite(v) and abs(v) < 20 else 0.0
+
+
+def info_with_backoff(yt, tries=3):
+    for k in range(tries):
+        try:
+            return yf.Ticker(yt).info or {}
+        except Exception as e:
+            if "Too Many Requests" in str(e) or "429" in str(e):
+                wait = 60 * (k + 1)
+                print(f"  429 on {yt} — backing off {wait}s", file=sys.stderr)
+                time.sleep(wait)
+            else:
+                print(f"  info failed {yt}: {e}", file=sys.stderr)
+                return {}
+    return {}
 
 
 # ---------------- 1. Nordnet lists ----------------
@@ -168,109 +189,56 @@ for r in funds_raw:
     ))
 
 no_shares = [s for s in shares if s["country"] == "NO"]
-foreign = [s for s in shares if s["country"] != "NO" and s["yt"]
-           and (s["owners"] or 0) >= FOREIGN_MIN_OWNERS]
-foreign.sort(key=lambda s: s["owners"] or 0, reverse=True)
-foreign = foreign[:FOREIGN_HIST_MAX]
-print(f"history targets: {len(no_shares)} NO (daily) + {len(foreign)} foreign (monthly, most-owned)", file=sys.stderr)
+foreign_all = [s for s in shares if s["country"] != "NO" and s["yt"]
+               and (s["owners"] or 0) >= FOREIGN_MIN_OWNERS]
+foreign_all.sort(key=lambda s: s["owners"] or 0, reverse=True)
+g_cand = foreign_all[:GLOBAL_CAND]
+g_cand_ts = [s["yt"] for s in g_cand]
+foreign_rest = foreign_all[:FOREIGN_HIST_MAX]
 
-# ---------------- 2. benchmark + Norwegian daily history ----------------
-print("picking benchmark...", file=sys.stderr)
+# ---------------- 2. benchmarks + daily history (NO + global candidates + ETFs) ----------------
+print("picking benchmarks...", file=sys.stderr)
 bench_t, bench_hist = None, None
 for c in ["OBX.OL", "^OSEAX", "OBXEDNB.OL"]:
     try:
         h = yf.download(c, period="11y", interval="1d", auto_adjust=True, progress=False)["Close"].dropna()
         if len(h) > 2000:
             bench_t, bench_hist = c, h.squeeze()
-            print(f"  benchmark: {c}", file=sys.stderr)
+            print(f"  oslo benchmark: {c}", file=sys.stderr)
             break
     except Exception as e:
         print(f"  bench {c} failed: {e}", file=sys.stderr)
 if bench_hist is None:
-    raise SystemExit("no benchmark ticker worked")
+    raise SystemExit("no Oslo benchmark worked")
 
-no_ts = [s["yt"] for s in no_shares] + [e["t"] for e in ETFS]
-print(f"downloading 11y daily history for {len(no_ts)} NO tickers + ETFs...", file=sys.stderr)
-hist = yf.download(no_ts, period="11y", interval="1d", auto_adjust=True, progress=False, threads=True)["Close"]
+gbench_hist = yf.download("^GSPC", period="11y", interval="1d", auto_adjust=True, progress=False)["Close"].dropna().squeeze()
+print(f"  global benchmark: ^GSPC ({len(gbench_hist)} obs)", file=sys.stderr)
+
+daily_ts = [s["yt"] for s in no_shares] + g_cand_ts + [e["t"] for e in ETFS]
+daily_ts = list(dict.fromkeys(daily_ts))
+print(f"downloading 11y daily history for {len(daily_ts)} tickers...", file=sys.stderr)
+hist = yf.download(daily_ts, period="11y", interval="1d", auto_adjust=True, progress=False, threads=True)["Close"]
 hist = hist.dropna(how="all")
 hist["__BENCH__"] = bench_hist
+hist["__BENCHG__"] = gbench_hist
 
 monthly = hist.resample("ME").last()
 mrets = monthly.pct_change().dropna(how="all").tail(120)
 daily = hist.pct_change().tail(504)
 bench_d = daily["__BENCH__"].dropna()
-bench_m = mrets["__BENCH__"]
+gbench_d = daily["__BENCHG__"].dropna()
 
-try:
-    fx = float(np.asarray(yf.download("EURNOK=X", period="5d", interval="1d", progress=False)["Close"].dropna().iloc[-1]).reshape(-1)[0])
-except Exception:
-    fx = 11.5
-print(f"EURNOK: {fx:.2f}", file=sys.stderr)
+# FX -> NOK for market-cap comparability
+fxmap = {"NOK": 1.0}
+for ccy, pair in [("EUR", "EURNOK=X"), ("USD", "USDNOK=X"), ("SEK", "SEKNOK=X"), ("DKK", "DKKNOK=X"),
+                  ("CAD", "CADNOK=X"), ("CHF", "CHFNOK=X"), ("GBP", "GBPNOK=X")]:
+    try:
+        fxmap[ccy] = float(np.asarray(yf.download(pair, period="5d", interval="1d", progress=False)["Close"].dropna().iloc[-1]).reshape(-1)[0])
+    except Exception:
+        fxmap[ccy] = {"EUR": 11.5, "USD": 10.5, "SEK": 1.05, "DKK": 1.55, "CAD": 7.6, "CHF": 12.8, "GBP": 13.4}[ccy]
+print("FX:", {k: round(v, 2) for k, v in fxmap.items()}, file=sys.stderr)
 
-# foreign monthly history is fetched LATER (after .info calls for the model
-# universe) so yfinance rate limits hit the bulk download, not the metadata
 f_mrets = {}
-
-
-def fetch_foreign_history():
-    fmap = {s["yt"]: s for s in foreign}
-    chunk = 400
-    for i in range(0, len(foreign), chunk):
-        ts = [s["yt"] for s in foreign[i:i + chunk]]
-        print(f"  foreign monthly chunk {i // chunk + 1}/{(len(foreign) + chunk - 1) // chunk} ({len(ts)})", file=sys.stderr)
-        try:
-            h = None
-            for attempt in range(2):
-                h = yf.download(ts, period="10y", interval="1mo", auto_adjust=True, progress=False, threads=True)["Close"]
-                got = 0 if h is None or h.empty else int(h.notna().any().sum())
-                if got >= len(ts) * 0.5:
-                    break
-                print(f"  chunk thin ({got}/{len(ts)}) — backing off 90s and retrying", file=sys.stderr)
-                time.sleep(90)
-        except Exception as e:
-            print(f"  chunk failed: {e}", file=sys.stderr)
-            continue
-        if h is None or h.empty:
-            continue
-        if not hasattr(h, "columns"):  # single series
-            h = h.to_frame(name=ts[0])
-        for t in h.columns:
-            col = h[t].dropna()
-            if len(col) < 13:
-                continue
-            s = fmap.get(t)
-            if not s:
-                continue
-            last = float(col.iloc[-1])
-            if last <= 0:
-                continue
-            if s["px"]:
-                if abs(last / s["px"] - 1) > 0.15:
-                    continue  # wrong listing / GBp scale / stale — no chart for this one
-            else:
-                # Nordnet hides last price for some foreign names anonymously — backfill from Yahoo
-                s["px"] = round(last, 2)
-                if s.get("chg") is None and isinstance(s["y"].get("yield_1d"), (int, float)):
-                    s["chg"] = s["y"]["yield_1d"]
-            rr = col.pct_change().dropna()
-            f_mrets[t] = rr
-        time.sleep(0.5)
-    print(f"  validated foreign history: {len(f_mrets)}", file=sys.stderr)
-
-
-def info_with_backoff(yt, tries=3):
-    for k in range(tries):
-        try:
-            return yf.Ticker(yt).info or {}
-        except Exception as e:
-            if "Too Many Requests" in str(e) or "429" in str(e):
-                wait = 60 * (k + 1)
-                print(f"  429 on {yt} — backing off {wait}s", file=sys.stderr)
-                time.sleep(wait)
-            else:
-                print(f"  info failed {yt}: {e}", file=sys.stderr)
-                return {}
-    return {}
 
 
 def months_of(yt):
@@ -281,17 +249,11 @@ def months_of(yt):
     return 0
 
 
-def clean_ret(v):
-    v = float(v)
-    return round(v, 4) if math.isfinite(v) and abs(v) < 20 else 0.0
-
-
 def rets_list(yt):
     if yt in mrets.columns:
         return [clean_ret(v) for v in mrets[yt].fillna(0.0).values]
     if yt in f_mrets:
-        r = f_mrets[yt].tail(120)
-        return [clean_ret(v) for v in r.values]
+        return [clean_ret(v) for v in f_mrets[yt].tail(120).values]
     return []
 
 
@@ -304,16 +266,20 @@ def hist_ann(yt):
         return 0.0
     if len(r) < 12:
         return 0.0
-    growth = float(np.prod(1 + r.values))
-    return (growth ** (12 / len(r)) - 1) * 100
+    # clamp glitchy returns (bad split adjustments can show < -100% months,
+    # which would make the cumulative product negative -> complex root)
+    vals = np.clip(r.values, -0.95, 20.0)
+    growth = max(1e-9, float(np.prod(1 + vals)))
+    return (growth ** (12 / len(vals)) - 1) * 100
 
 
-def stats_daily(yt):
+def stats_daily(yt, bd=None):
+    bd = bench_d if bd is None else bd
     d = hist[yt].dropna() if yt in hist.columns else None
     if d is None or len(d) < 60:
         return None
     dr = d.pct_change().tail(504).dropna()
-    al = dr.align(bench_d, join="inner")
+    al = dr.align(bd, join="inner")
     if len(al[0]) < 60:
         return None
     beta = float(np.cov(al[0], al[1])[0, 1] / np.var(al[1]))
@@ -329,137 +295,206 @@ def stats_monthly(yt):
     r = f_mrets[yt].tail(36)
     if len(r) < 13:
         return None
-    al = r.align(bench_m, join="inner")
-    beta = float(np.cov(al[0], al[1])[0, 1] / np.var(al[1])) if len(al[0]) >= 12 else None
     vol = float(r.std() * math.sqrt(12) * 100)
     rr = f_mrets[yt]
     mom = float((np.prod(1 + rr.iloc[-13:-1].values) - 1) * 100) if len(rr) >= 13 else 0.0
-    return dict(beta=round(beta, 2) if beta is not None else None,
-                vol=round(vol, 1), mom=round(mom, 1), src="3y monthly")
+    return dict(beta=None, vol=round(vol, 1), mom=round(mom, 1), src="3y monthly")
 
 
-# ---------------- 4. model universe (Oslo Bors, unchanged policy) ----------------
-def sane(s):
-    st = stats_daily(s["yt"])
-    return st is not None and st["vol"] <= 80
-
-
-eligible = [s for s in no_shares if s["px"] and months_of(s["yt"]) >= 36 and sane(s)]
-eligible.sort(key=lambda s: s["turn"] or 0, reverse=True)
-core = eligible[:MODEL_N]
-core_ids = {s["id"] for s in core}
-print(f"model universe: {len(core)} NO shares + {len(ETFS)} ETFs", file=sys.stderr)
-
-print("fetching sector/mcap/quality for model universe (yfinance .info)...", file=sys.stderr)
-U = []
-for s in core:
+def build_member(s, bd):
+    """Universe member dict from a Nordnet share record (needs daily history)."""
     info = info_with_backoff(s["yt"])
     time.sleep(0.5)
-    sector = info.get("sector") or "Oslo Børs"
-    mcap = (info.get("marketCap") or 0) / 1e9
+    sector = info.get("sector") or s["exch"]
+    mcap = (info.get("marketCap") or 0) / 1e9 * fxmap.get(s["ccy"], 1.0)
     roe = info.get("returnOnEquity")
     qual = max(0.05, min(1.0, roe if roe is not None else 0.5))
-    st = stats_daily(s["yt"])
+    st = stats_daily(s["yt"], bd)
     capm = rf + st["beta"] * ERP
     h = max(HIST_CLIP[0], min(HIST_CLIP[1], hist_ann(s["yt"])))
     er = W_CAPM * capm + W_HIST * h
-    U.append(dict(t=s["yt"], nn=s["id"], name=s["name"], sector=sector, ccy=s["ccy"],
-                  er=round(er, 1), vol=st["vol"], beta=st["beta"], mom=st["mom"],
-                  pe=s["pe"] or 0, pb=s["pb"] or 0, div=s["div"] or 0,
-                  mcap=round(mcap, 1), qual=round(qual, 2),
-                  px=s["px"], chg=s["chg"] or 0, slug=s["slug"]))
+    px = s["px"]
+    if not px and s["yt"] in hist.columns:
+        px = round(float(hist[s["yt"]].dropna().iloc[-1]), 2)
+    return dict(t=s["yt"], nn=s["id"], name=s["name"], sector=sector, ccy=s["ccy"],
+                er=round(er, 1), vol=st["vol"], beta=st["beta"], mom=st["mom"],
+                pe=s["pe"] or 0, pb=s["pb"] or 0, div=s["div"] or 0,
+                mcap=round(mcap, 1), qual=round(qual, 2),
+                px=px, chg=s["chg"] if s["chg"] is not None else 0, slug=s["slug"])
 
-for e in ETFS:
-    st = stats_daily(e["t"])
-    capm = rf + st["beta"] * ERP
-    h = max(HIST_CLIP[0], min(HIST_CLIP[1], hist_ann(e["t"])))
-    info = info_with_backoff(e["t"])
-    time.sleep(0.5)
-    aum_bn_nok = ((info.get("totalAssets") or {"EUNL.DE": 95e9, "EUNH.DE": 5.5e9, "XEON.DE": 22e9}.get(e["t"], 0)) / 1e9) * fx
-    dy = info.get("dividendYield") or 0
-    if dy and dy < 0.25:
-        dy *= 100
-    U.append(dict(t=e["t"], nn=None, name=e["name"], sector=e["sector"], ccy=e["ccy"],
-                  er=round(W_CAPM * capm + W_HIST * h, 1), vol=st["vol"], beta=st["beta"], mom=st["mom"],
-                  pe=e["pe"], pb=e["pb"], div=round(dy, 2), mcap=round(aum_bn_nok, 1), qual=e["qual"],
-                  px=round(float(hist[e["t"]].dropna().iloc[-1]), 2),
-                  chg=round(float(hist[e["t"]].dropna().iloc[-1] / hist[e["t"]].dropna().iloc[-2] - 1) * 100, 2),
-                  slug=None))
 
-bvol = float(bench_d.std() * math.sqrt(252) * 100)
-bcl = hist["__BENCH__"].dropna()
-bench = dict(code="OBX", ticker="__BENCH__", source=bench_t, name="Oslo Børs OBX",
-             er=round(W_CAPM * (rf + ERP) + W_HIST * min(HIST_CLIP[1], hist_ann("__BENCH__")), 1),
-             vol=round(bvol, 1), px=round(float(bcl.iloc[-1]), 2),
-             chg=round(float(bcl.iloc[-1] / bcl.iloc[-2] - 1) * 100, 2))
+def etf_members(bd):
+    out = []
+    for e in ETFS:
+        st = stats_daily(e["t"], bd)
+        capm = rf + st["beta"] * ERP
+        h = max(HIST_CLIP[0], min(HIST_CLIP[1], hist_ann(e["t"])))
+        info = info_with_backoff(e["t"])
+        time.sleep(0.5)
+        aum = ((info.get("totalAssets") or ETF_AUM_EUR.get(e["t"], 0)) / 1e9) * fxmap["EUR"]
+        dy = info.get("dividendYield") or 0
+        if dy and dy < 0.25:
+            dy *= 100
+        out.append(dict(t=e["t"], nn=None, name=e["name"], sector=e["sector"], ccy=e["ccy"],
+                        er=round(W_CAPM * capm + W_HIST * h, 1), vol=st["vol"], beta=st["beta"], mom=st["mom"],
+                        pe=e["pe"], pb=e["pb"], div=round(dy, 2), mcap=round(aum, 1), qual=e["qual"],
+                        px=round(float(hist[e["t"]].dropna().iloc[-1]), 2),
+                        chg=round(float(hist[e["t"]].dropna().iloc[-1] / hist[e["t"]].dropna().iloc[-2] - 1) * 100, 2),
+                        slug=None))
+    return out
 
-# now the bulk foreign download (model-universe metadata is already secured)
+
+def sane_daily(s, bd):
+    st = stats_daily(s["yt"], bd)
+    return st is not None and st["vol"] <= MAX_VOL
+
+
+# ---------------- 3. OSLO universe ----------------
+eligible = [s for s in no_shares if months_of(s["yt"]) >= 36 and sane_daily(s, bench_d)]
+eligible.sort(key=lambda s: s["turn"] or 0, reverse=True)
+oslo_core = eligible[:OSLO_N]
+print(f"oslo universe: {len(oslo_core)} shares (pool {len(eligible)}) + {len(ETFS)} ETFs", file=sys.stderr)
+print("fetching .info for oslo universe...", file=sys.stderr)
+U_oslo = [build_member(s, bench_d) for s in oslo_core]
+
+# ---------------- 4. GLOBAL universe ----------------
+g_eligible = [s for s in g_cand if months_of(s["yt"]) >= 36 and sane_daily(s, gbench_d)]
+g_eligible.sort(key=lambda s: s["owners"] or 0, reverse=True)
+global_core = g_eligible[:GLOBAL_N]
+print(f"global universe: {len(global_core)} shares (pool {len(g_eligible)}) + {len(ETFS)} ETFs", file=sys.stderr)
+print("fetching .info for global universe...", file=sys.stderr)
+U_global = [build_member(s, gbench_d) for s in global_core]
+
+print("fetching .info for ETFs...", file=sys.stderr)
+U_oslo += etf_members(bench_d)
+U_global += etf_members(gbench_d)
+
+core_ids = {s["id"]: "oslo" for s in oslo_core}
+core_ids.update({s["id"]: "global" for s in global_core})
+
+# ---------------- 5. remaining foreign monthly history ----------------
+def fetch_foreign_history():
+    targets = [s for s in foreign_rest if s["yt"] not in mrets.columns]
+    fmap = {s["yt"]: s for s in targets}
+    chunk = 400
+    for i in range(0, len(targets), chunk):
+        ts = [s["yt"] for s in targets[i:i + chunk]]
+        print(f"  foreign monthly chunk {i // chunk + 1}/{(len(targets) + chunk - 1) // chunk} ({len(ts)})", file=sys.stderr)
+        try:
+            h = None
+            for attempt in range(2):
+                h = yf.download(ts, period="10y", interval="1mo", auto_adjust=True, progress=False, threads=True)["Close"]
+                got = 0 if h is None or h.empty else int(h.notna().any().sum())
+                if got >= len(ts) * 0.5:
+                    break
+                print(f"  chunk thin ({got}/{len(ts)}) — backing off 90s and retrying", file=sys.stderr)
+                time.sleep(90)
+        except Exception as e:
+            print(f"  chunk failed: {e}", file=sys.stderr)
+            continue
+        if h is None or h.empty:
+            continue
+        if not hasattr(h, "columns"):
+            h = h.to_frame(name=ts[0])
+        for t in h.columns:
+            col = h[t].dropna()
+            if len(col) < 13:
+                continue
+            s = fmap.get(t)
+            if not s:
+                continue
+            last = float(col.iloc[-1])
+            if last <= 0:
+                continue
+            if s["px"]:
+                if abs(last / s["px"] - 1) > 0.15:
+                    continue  # wrong listing / GBp scale / stale
+            else:
+                s["px"] = round(last, 2)  # Nordnet hides price for some foreign names anonymously
+                if s.get("chg") is None and isinstance(s["y"].get("yield_1d"), (int, float)):
+                    s["chg"] = s["y"]["yield_1d"]
+            f_mrets[t] = col.pct_change().dropna()
+        time.sleep(0.5)
+    print(f"  validated foreign monthly history: {len(f_mrets)}", file=sys.stderr)
+
+
 fetch_foreign_history()
 
-rets = {a["t"]: rets_list(a["t"]) for a in U}
-rets["__BENCH__"] = rets_list("__BENCH__")
-dates = [d.strftime("%Y-%m") for d in mrets.index]
+
+def bench_block(code, ticker_col, source, name, bd):
+    bvol = float(bd.std() * math.sqrt(252) * 100)
+    bcl = hist[ticker_col].dropna()
+    return dict(code=code, ticker=ticker_col, source=source, name=name,
+                er=round(W_CAPM * (rf + ERP) + W_HIST * min(HIST_CLIP[1], hist_ann(ticker_col)), 1),
+                vol=round(bvol, 1), px=round(float(bcl.iloc[-1]), 2),
+                chg=round(float(bcl.iloc[-1] / bcl.iloc[-2] - 1) * 100, 2))
+
+
+def universe_block(U, bench):
+    rr = {a["t"]: rets_list(a["t"]) for a in U}
+    rr[bench["ticker"]] = rets_list(bench["ticker"])
+    return dict(universe=U, bench=bench, rets=rr)
+
+
 asof = dt.date.today().isoformat()
+dates = [d.strftime("%Y-%m") for d in mrets.index]
+data = dict(asof=asof, rf=round(rf, 2), erp=ERP, cash=CASH, bond=BOND, dates=dates,
+            universes=dict(
+                oslo=universe_block(U_oslo, bench_block("OBX", "__BENCH__", bench_t, "Oslo Børs OBX", bench_d)),
+                global_=None,  # placeholder replaced below (json key 'global')
+            ),
+            counts=dict(shares=len(shares), funds=len(funds), withHistory=0))
+data["universes"]["global"] = universe_block(U_global, bench_block("SPX", "__BENCHG__", "^GSPC", "S&P 500", gbench_d))
+del data["universes"]["global_"]
 
-data = dict(asof=asof, rf=round(rf, 2), erp=ERP, cash=CASH, bond=BOND,
-            bench=bench, universe=U, dates=dates, rets=rets,
-            counts=dict(shares=len(shares), funds=len(funds),
-                        withHistory=len(no_ts) + len(f_mrets)))
-
-# ---------------- 5. catalog (lazy search index) ----------------
+# ---------------- 6. catalog ----------------
 catalog = []
 for s in shares:
+    inu = core_ids.get(s["id"])
     catalog.append(dict(id=s["id"], sym=s["sym"], name=s["name"], type="EQ",
                         cat=f"Aksje · {s['exch']}", ccy=s["ccy"], px=s["px"], chg=s["chg"],
-                        owners=s["owners"], inU=s["id"] in core_ids,
-                        yt=s["yt"] if s["id"] in core_ids else None))
+                        owners=s["owners"], inU=inu, yt=s["yt"] if inu else None))
 for fd in funds:
     catalog.append(dict(id=fd["id"], sym=None, name=fd["name"], type="FND",
                         cat=fd["cat"], ccy=fd["ccy"], px=fd["px"], chg=fd["chg"],
-                        owners=fd["owners"], inU=False, yt=None))
+                        owners=fd["owners"], inU=None, yt=None))
 
-# ---------------- 6. detail shards ----------------
+# ---------------- 7. detail shards ----------------
 sdir = ROOT / "data" / "s"
 sdir.mkdir(parents=True, exist_ok=True)
-shards = [dict() for _ in range(SHARDS)]
+shard_data = [dict() for _ in range(SHARDS)]
+with_hist = 0
 for s in shares:
     has_hist = months_of(s["yt"]) > 0 if s["yt"] else False
-    st = stats_daily(s["yt"]) if s["country"] == "NO" else stats_monthly(s["yt"])
+    if has_hist:
+        with_hist += 1
+    st = stats_daily(s["yt"]) if (s["yt"] in hist.columns) else stats_monthly(s["yt"])
     det = dict(id=s["id"], sym=s["sym"], yt=s["yt"], name=s["name"], type="EQ",
                cat=f"Aksje · {s['exch']}", ccy=s["ccy"], isin=s["isin"], px=s["px"], chg=s["chg"],
                owners=s["owners"], slug=s["slug"], y=s["y"],
                ratios=dict(pe=s["pe"], pb=s["pb"], ps=s["ps"], div=s["div"]),
                stats=st, months=months_of(s["yt"]) if s["yt"] else 0,
-               rets=rets_list(s["yt"]) if has_hist else [])
-    shards[s["id"] % SHARDS][str(s["id"])] = det
+               rets=rets_list(s["yt"]) if has_hist else [], inU=core_ids.get(s["id"]))
+    shard_data[s["id"] % SHARDS][str(s["id"])] = det
 for fd in funds:
     det = dict(id=fd["id"], name=fd["name"], type="FND", cat=fd["cat"], ccy=fd["ccy"],
                isin=fd["isin"], px=fd["px"], chg=fd["chg"], owners=fd["owners"],
                slug=fd["slug"], y=fd["y"], fund=fd["fund"])
-    shards[fd["id"] % SHARDS][str(fd["id"])] = det
-for i, sh in enumerate(shards):
+    shard_data[fd["id"] % SHARDS][str(fd["id"])] = det
+for i, sh in enumerate(shard_data):
     (sdir / f"{i}.json").write_text(json.dumps(sh, ensure_ascii=False, allow_nan=False), encoding="utf-8")
 
-# remove the old per-instrument layout if present
-old_dir = ROOT / "data" / "i"
-if old_dir.exists():
-    for p in old_dir.glob("*.json"):
-        p.unlink()
-    old_dir.rmdir()
+data["counts"]["withHistory"] = with_hist
 
-# ---------------- 7. write JS/JSON modules ----------------
+# ---------------- 8. write modules ----------------
 (ROOT / "assets" / "data.js").write_text(
-    "/* data.js — model-universe snapshot (generated " + asof + ")\n"
-    "   Source: Nordnet lists + Yahoo history + Norges Bank key rate.\n"
-    "   Model universe = " + str(MODEL_N) + " most-traded Oslo Børs shares (>=36mo history, vol<=80%) + UCITS ETFs.\n"
+    "/* data.js — dual model-universe snapshot (generated " + asof + ")\n"
+    "   oslo: " + str(OSLO_N) + " most-traded Oslo Børs shares + UCITS ETFs, benchmark OBX.\n"
+    "   global: " + str(GLOBAL_N) + " most-owned foreign shares on Nordnet + UCITS ETFs, benchmark S&P 500.\n"
     "   Expected returns: 0.55*CAPM-implied (rf + beta*ERP) + 0.45*trailing-10y (clipped). */\n"
-    "window.MERIDIAN_DATA = " + json.dumps(data, ensure_ascii=False) + ";\n", encoding="utf-8")
+    "window.MERIDIAN_DATA = " + json.dumps(data, ensure_ascii=False, allow_nan=False) + ";\n", encoding="utf-8")
 
-(ROOT / "assets" / "catalog.json").write_text(json.dumps(catalog, ensure_ascii=False), encoding="utf-8")
+(ROOT / "assets" / "catalog.json").write_text(json.dumps(catalog, ensure_ascii=False, allow_nan=False), encoding="utf-8")
 
-old_cat = ROOT / "assets" / "catalog.js"
-if old_cat.exists():
-    old_cat.unlink()
-
-print(f"\nwrote assets/data.js ({len(U)} model assets), assets/catalog.json ({len(catalog)} instruments), "
-      f"data/s/*.json ({SHARDS} shards, {len(shares) + len(funds)} instruments, {len(f_mrets)} foreign with history)", file=sys.stderr)
+print(f"\nwrote assets/data.js (oslo {len(U_oslo)} + global {len(U_global)}), "
+      f"assets/catalog.json ({len(catalog)}), data/s/*.json ({with_hist} with history)", file=sys.stderr)

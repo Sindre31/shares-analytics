@@ -43,7 +43,7 @@
           <div class="hero-main">
             <div class="eyebrow">Meridian Portfolio Model Exchange · PMX</div>
             <h1 class="hero-h1">Ten models.<br>One universe.<br><span class="up">The optimal book.</span></h1>
-            <p class="hero-sub">Ten canonical portfolio-construction models — from Markowitz to machine-learning — run live on the ${M.U.length} most-traded Oslo Børs names plus UCITS diversifiers, vs the OBX benchmark. Every instrument on Nordnet — ${(((window.MERIDIAN_DATA || {}).counts || {}).shares || 0).toLocaleString('en-US')} shares across all exchanges and ${(((window.MERIDIAN_DATA || {}).counts || {}).funds || 0).toLocaleString('en-US')} funds — is searchable from the box above. Real market data as of ${M.ASOF}.</p>
+            <p class="hero-sub">Ten canonical portfolio-construction models — from Markowitz to machine-learning — run live on the ${M.U.length} ${M.ULABEL} plus UCITS diversifiers, vs the ${M.BENCH.name} benchmark. Every instrument on Nordnet — ${(((window.MERIDIAN_DATA || {}).counts || {}).shares || 0).toLocaleString('en-US')} shares across all exchanges and ${(((window.MERIDIAN_DATA || {}).counts || {}).funds || 0).toLocaleString('en-US')} funds — is searchable from the box above. Switch universe with OSL / GLB in the header. Real market data as of ${M.ASOF}.</p>
             <div class="hero-cta">
               <a class="btn primary" href="#directory">▸ BROWSE MODELS</a>
               <a class="btn" href="#frontier">▸ RISK / RETURN MAP</a>
@@ -84,7 +84,7 @@
           <div class="panel-body tight"><div id="compTable"></div></div>
         </div>
 
-        <div class="section-bar mt24"><h2>MODEL UNIVERSE</h2><span class="cat-tag">${M.U.length} MOST-TRADED OSLO BØRS · ${(((((window.MERIDIAN_DATA || {}).counts || {}).shares || 0) + ((((window.MERIDIAN_DATA || {}).counts || {})).funds || 0)) - M.U.length).toLocaleString('en-US')} MORE VIA SEARCH · CLICK A ROW FOR CROSS-MODEL VIEW</span><div class="hr"></div></div>
+        <div class="section-bar mt24"><h2>MODEL UNIVERSE · ${M.UKEY.toUpperCase()}</h2><span class="cat-tag">${M.U.length} ${M.ULABEL.toUpperCase()} · ${(((((window.MERIDIAN_DATA || {}).counts || {}).shares || 0) + ((((window.MERIDIAN_DATA || {}).counts || {})).funds || 0)) - M.U.length).toLocaleString('en-US')} MORE VIA SEARCH · CLICK A ROW FOR CROSS-MODEL VIEW</span><div class="hr"></div></div>
         <div class="panel">
           <div class="panel-body tight"><div id="uniTable"></div></div>
         </div>

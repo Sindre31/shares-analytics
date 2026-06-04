@@ -74,13 +74,90 @@
   }
 
   function notInUniversePanel(d) {
+    const other = d.inU && d.inU !== M.UKEY
+      ? `<p class="dim" style="margin:8px 0 0;font-size:12.5px">It <b>is</b> a member of the <span class="mono up">${esc(d.inU.toUpperCase())}</span> universe —
+         <button class="btn ghost" style="padding:2px 8px;font-size:10.5px" onclick="MER.setUniverse('${esc(d.inU)}')">SWITCH UNIVERSE ▸</button></p>`
+      : '';
     return `
       <div class="panel mt16">
-        <div class="panel-head">MODEL UNIVERSE</div>
+        <div class="panel-head">MODEL UNIVERSE · ${esc(M.UKEY.toUpperCase())}</div>
         <div class="panel-body"><p class="dim" style="margin:0;font-size:12.5px;line-height:1.6">
-          ${esc(d.name)} is searchable but sits outside the model universe — the ${M.U.length}-instrument book the ten models trade
-          (the most-traded Oslo Børs names with ≥3y history, plus UCITS diversifiers). It is still fully tradable on Nordnet.
-        </p></div>
+          ${esc(d.name)} sits outside the selected model universe — the ${M.U.length} ${esc(M.ULABEL)} (plus UCITS diversifiers) the ten models trade.
+          It is still fully tradable on Nordnet.
+        </p>${other}</div>
+      </div>`;
+  }
+
+  /* ---------- model screening: how each model scores ANY share vs the universe ---------- */
+  function screeningPanel(d) {
+    const st = d.stats || {}, r = d.ratios || {};
+    if (st.vol == null && st.mom == null && !r.pe) return '';
+    const eq = M.EQUITY;
+    const pctOf = (vals, v, lowerBetter) => {
+      const xs = vals.filter(x => x != null && isFinite(x));
+      if (!xs.length || v == null || !isFinite(v)) return null;
+      const below = xs.filter(x => lowerBetter ? x > v : x < v).length;
+      return Math.round(100 * below / xs.length);
+    };
+    const zIn = (vals, v) => {
+      const xs = vals.filter(x => x != null && isFinite(x));
+      const m = xs.reduce((s, x) => s + x, 0) / xs.length;
+      const sd = Math.sqrt(xs.reduce((s, x) => s + (x - m) * (x - m), 0) / xs.length) || 1e-9;
+      return (v - m) / sd;
+    };
+    // value composite vs universe distribution (same formula as the VAL model)
+    let valPct = null;
+    if (r.pe > 0) {
+      const cand = eq.filter(a => a.pe > 0);
+      const sc = a => 0.45 * zIn(cand.map(x => 1 / x.pe), 1 / a.pe)
+                    + 0.35 * zIn(cand.map(x => 1 / Math.max(0.3, x.pb)), 1 / Math.max(0.3, a.pb || 0.3))
+                    + 0.20 * zIn(cand.map(x => x.div || 0), a.div || 0);
+      const mine = sc({ pe: r.pe, pb: r.pb || 0, div: r.div || 0 });
+      valPct = pctOf(cand.map(a => sc(a)), mine, false);
+    }
+    // momentum rank vs universe
+    const momPct = pctOf(eq.map(a => a.mom), st.mom, false);
+    const momRank = st.mom != null ? 1 + eq.filter(a => a.mom > st.mom).length : null;
+    // low-vol rank (MINV / RP / HRP all reward low risk)
+    const volPct = pctOf(M.RISKY.map(a => a.vol), st.vol, true);
+    // MVO utility at default lambda=2 (needs beta for the mu estimate)
+    let mvoRow = null;
+    if (st.beta != null && st.vol != null && (d.rets || []).length >= 12) {
+      const n = d.rets.length;
+      const growth = d.rets.reduce((g, v) => g * (1 + v), 1);
+      const hist = Math.max(-5, Math.min(35, (Math.pow(growth, 12 / n) - 1) * 100));
+      const er = 0.55 * (M.RF + st.beta * M.ERP) + 0.45 * hist;
+      const util = (er - M.RF) - 0.5 * 2.0 * (st.vol * st.vol) / 100;
+      mvoRow = { er, util };
+    }
+    const badge = (p, hi, mid) => p == null ? '<span class="badge">N/A</span>'
+      : p >= hi ? '<span class="badge g">● STRONG</span>'
+      : p >= mid ? '<span class="badge a">◐ MID</span>'
+      : '<span class="badge r">○ WEAK</span>';
+    const bar = p => p == null ? '<span class="mute">—</span>'
+      : `<div class="wbar"><i style="width:${p}%"></i><span>${p}th</span></div>`;
+    const rows = [
+      ['MOM', 'Momentum', `12-1m ${st.mom != null ? (st.mom >= 0 ? '+' : '−') + Math.abs(st.mom).toFixed(0) + '%' : '—'}${momRank ? ' · rank ' + momRank + '/' + eq.length : ''}`, momPct, badge(momPct, 80, 50)],
+      ['VAL', 'Value', r.pe > 0 ? `P/E ${r.pe.toFixed(1)} · P/B ${r.pb ? r.pb.toFixed(1) : '—'} · yield ${(r.div || 0).toFixed(1)}%` : 'no earnings multiple', valPct, badge(valPct, 80, 50)],
+      ['MINV', 'Low volatility', st.vol != null ? `σ ${st.vol.toFixed(0)}% ann.` : '—', volPct, badge(volPct, 70, 40)],
+      ['RP/HRP', 'Risk budget', st.vol != null ? `inverse-vol weight ≈ ${(100 / st.vol / M.RISKY.reduce((s, a) => s + 1 / a.vol, 0) * 100).toFixed(1)}%` : '—', volPct, badge(volPct, 70, 40)],
+      ['MVO', 'Mean-variance', mvoRow ? `μ̂ ${mvoRow.er.toFixed(1)}% · utility ${mvoRow.util >= 0 ? '+' : '−'}${Math.abs(mvoRow.util).toFixed(1)} @ λ=2` : 'needs β (no daily history)', mvoRow ? (mvoRow.util > 0 ? 90 : 20) : null, mvoRow ? (mvoRow.util > 0 ? '<span class="badge g">● CLEARS HURDLE</span>' : '<span class="badge r">○ BELOW HURDLE</span>') : '<span class="badge">N/A</span>'],
+    ];
+    return `
+      <div class="panel mt16">
+        <div class="panel-head">MODEL SCREENING · VS ${esc(M.UKEY.toUpperCase())} UNIVERSE
+          <div class="right"><span class="mono dim">PERCENTILE = BETTER THAN X% OF UNIVERSE</span></div>
+        </div>
+        <div class="panel-body tight">
+          <table class="tbl">
+            <thead><tr><th class="tleft">Model lens</th><th class="tleft">Signal</th><th>Percentile</th><th>Verdict</th></tr></thead>
+            <tbody>${rows.map(x => `
+              <tr><td class="tleft"><span class="mono" style="font-weight:600">${x[0]}</span> <span class="asset-name">${esc(x[1])}</span></td>
+                  <td class="tleft dim" style="font-family:var(--mono);font-size:11px">${x[2]}</td>
+                  <td>${bar(x[3])}</td><td>${x[4]}</td></tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>`;
   }
 
@@ -91,9 +168,8 @@
     const tail = rets.slice(-n);
     const mean = arr => arr.reduce((s, v) => s + v, 0) / arr.length;
     const mA = mean(tail), sdA = Math.sqrt(tail.reduce((s, v) => s + (v - mA) * (v - mA), 0) / n) || 1e-9;
-    const D = window.MERIDIAN_DATA;
     const out = M.U.map(u => {
-      const b = (D.rets[u.t] || []).slice(-n);
+      const b = (M.RETS[u.t] || []).slice(-n);
       if (b.length < n) return null;
       const mB = mean(b), sdB = Math.sqrt(b.reduce((s, v) => s + (v - mB) * (v - mB), 0) / n) || 1e-9;
       let c = 0; for (let k = 0; k < n; k++) c += (tail[k] - mA) * (b[k] - mB);
@@ -189,7 +265,7 @@
         <div class="model-grid mt16">
           <div class="main">
             ${perf.html}
-            ${u ? crossModelPanel(d.yt) : notInUniversePanel(d)}
+            ${u ? crossModelPanel(d.yt) : screeningPanel(d) + notInUniversePanel(d)}
           </div>
           <div class="side">
             <div class="panel">
@@ -262,7 +338,7 @@
             <div class="panel">
               <div class="panel-head">RETURNS · NORDNET DATA</div>
               <div class="panel-body"><div id="fundBars"></div>
-                <div class="map-note mono">Nordnet does not expose fund NAV history publicly — periods are cumulative returns as reported. OBX 1Y for reference: ${pct((window.MERIDIAN_DATA.rets['__BENCH__'].slice(-12).reduce((a, r) => a * (1 + r), 1) - 1) * 100)}</div>
+                <div class="map-note mono">Nordnet does not expose fund NAV history publicly — periods are cumulative returns as reported. ${esc(M.BENCH.code)} 1Y for reference: ${pct((M.RETS[M.BENCH.ticker].slice(-12).reduce((a, r) => a * (1 + r), 1) - 1) * 100)}</div>
               </div>
             </div>
             ${notInUniversePanel(d)}
@@ -294,8 +370,8 @@
                 isin: null, px: u.px, chg: u.chg, owners: null, slug: u.slug,
                 ratios: { pe: u.pe, pb: u.pb, div: u.div },
                 stats: { vol: u.vol, beta: u.beta, mom: u.mom }, y: null,
-                months: (window.MERIDIAN_DATA.rets[u.t] || []).length,
-                rets: window.MERIDIAN_DATA.rets[u.t] || [] };
+                months: (M.RETS[u.t] || []).length,
+                rets: M.RETS[u.t] || [] };
     renderShare(d);
   }
 

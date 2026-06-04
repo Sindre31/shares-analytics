@@ -4,9 +4,13 @@
    ============================================================ */
 (function (g) {
   const D = g.MERIDIAN_DATA;
-  const RF = D.rf; // risk-free % (13-week T-bill yield)
-  const BENCH = { code: D.bench.code, ticker: D.bench.ticker, name: D.bench.name,
-                  er: D.bench.er, vol: D.bench.vol, px: D.bench.px, chg: D.bench.chg };
+  // selected model universe: 'oslo' (default) or 'global' — persisted across pages
+  const UKEY = (function(){ try { return localStorage.getItem('mer_universe') === 'global' ? 'global' : 'oslo'; } catch (e) { return 'oslo'; } })();
+  const DU = D.universes[UKEY];
+  const ULABEL = UKEY === 'oslo' ? 'most-traded Oslo Børs shares' : 'most-owned global shares on Nordnet';
+  const RF = D.rf; // risk-free % (Norges Bank key rate)
+  const BENCH = { code: DU.bench.code, ticker: DU.bench.ticker, name: DU.bench.name,
+                  er: DU.bench.er, vol: DU.bench.vol, px: DU.bench.px, chg: DU.bench.chg };
 
   // categorical palette (oklch, dark-friendly)
   const PAL = [
@@ -19,7 +23,7 @@
   ];
 
   // universe: real assets from the data snapshot (er/vol/beta/mom/pe/pb/div/mcap/qual)
-  const U = D.universe.map((a,i)=>({ ...a, color:PAL[i % PAL.length] }));
+  const U = DU.universe.map((a,i)=>({ ...a, color:PAL[i % PAL.length] }));
   const CASH = D.cash, BOND = D.bond;
 
   const MAP = Object.fromEntries(U.map(a=>[a.t,a]));
@@ -28,7 +32,7 @@
   // pairwise correlations — computed from the last 36 real monthly returns
   const RHO = (function(){
     const ts = U.map(a=>a.t), n=36;
-    const series = Object.fromEntries(ts.map(t=>[t, D.rets[t].slice(-n)]));
+    const series = Object.fromEntries(ts.map(t=>[t, DU.rets[t].slice(-n)]));
     const mean = Object.fromEntries(ts.map(t=>[t, series[t].reduce((s,v)=>s+v,0)/n]));
     const sd = Object.fromEntries(ts.map(t=>{
       const m=mean[t]; return [t, Math.sqrt(series[t].reduce((s,v)=>s+(v-m)*(v-m),0)/n)||1e-9];
@@ -46,16 +50,16 @@
   /* real growth-of-100 backtest paths (monthly rebalanced) */
   function pathFor(weights, months){
     const out=[100]; let idx=100;
-    const T = D.rets[U[0].t].length, start = Math.max(0, T-months);
+    const T = DU.rets[U[0].t].length, start = Math.max(0, T-months);
     for (let k=start;k<T;k++){
-      let pr=0; weights.forEach(x=>{ pr += x.w * (D.rets[x.t] ? D.rets[x.t][k] : 0); });
+      let pr=0; weights.forEach(x=>{ pr += x.w * (DU.rets[x.t] ? DU.rets[x.t][k] : 0); });
       idx *= (1+pr); out.push(idx);
     }
     return out;
   }
   function benchPath(months){
     const out=[100]; let idx=100;
-    const r = D.rets[D.bench.ticker], start = Math.max(0, r.length-months);
+    const r = DU.rets[DU.bench.ticker], start = Math.max(0, r.length-months);
     for (let k=start;k<r.length;k++){ idx *= (1+r[k]); out.push(idx); }
     return out;
   }
@@ -152,13 +156,23 @@
   }
 
   // Black-Litterman views (manager tilts)
-  const BL_VIEWS = [
-    {t:'KOG.OL',  dir:'OVER', f:1.7, txt:'European defence spending supercycle'},
-    {t:'SALM.OL', dir:'OVER', f:1.3, txt:'Tight salmon supply supports prices'},
-    {t:'DNB.OL',  dir:'OVER', f:1.2, txt:'Resilient NII, strong capital returns'},
-    {t:'EQNR.OL', dir:'UNDER',f:0.6, txt:'Softer oil & gas price deck −2.0%'},
-    {t:'TEL.OL',  dir:'UNDER',f:0.75,txt:'Mature telecom growth headwind'},
-  ].filter(v=>MAP[v.t]); // only views on names actually in the model universe
+  const ALL_VIEWS = {
+    oslo: [
+      {t:'KOG.OL',  dir:'OVER', f:1.7, txt:'European defence spending supercycle'},
+      {t:'SALM.OL', dir:'OVER', f:1.3, txt:'Tight salmon supply supports prices'},
+      {t:'DNB.OL',  dir:'OVER', f:1.2, txt:'Resilient NII, strong capital returns'},
+      {t:'EQNR.OL', dir:'UNDER',f:0.6, txt:'Softer oil & gas price deck −2.0%'},
+      {t:'TEL.OL',  dir:'UNDER',f:0.75,txt:'Mature telecom growth headwind'},
+    ],
+    global: [
+      {t:'NVDA',     dir:'OVER', f:1.7, txt:'AI capex cycle → semis outperform'},
+      {t:'MSFT',     dir:'OVER', f:1.2, txt:'Cloud + AI monetization compounding'},
+      {t:'NOVO-B.CO',dir:'OVER', f:1.3, txt:'GLP-1 franchise momentum'},
+      {t:'TSLA',     dir:'UNDER',f:0.7, txt:'EV margin pressure, competition'},
+      {t:'AAPL',     dir:'UNDER',f:0.85,txt:'Hardware cycle maturity'},
+    ],
+  };
+  const BL_VIEWS = ALL_VIEWS[UKEY].filter(v=>MAP[v.t]); // only views on names actually in the universe
   function bl(s){
     const c = (s.conf ?? 40)/100;
     const eqm = capw(RISKY);
@@ -328,5 +342,6 @@
 
   g.MERIDIAN = { U, MAP, byT, RISKY, EQUITY, MODELS, RF, BENCH, metrics, PAL,
                  HRP_CLUSTERS, BL_VIEWS, ASOF: D.asof, pathFor, benchPath, rhoOf,
-                 CASH, BOND, modelById: id => MODELS.find(m=>m.id===id) };
+                 CASH, BOND, UKEY, ULABEL, ERP: D.erp, RETS: DU.rets,
+                 modelById: id => MODELS.find(m=>m.id===id) };
 })(window);
