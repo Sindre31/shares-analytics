@@ -1,5 +1,11 @@
 # Model book changes
 
+## 2026-06-10
+
+- **OSLO / MINV** — in: KIT.OL · moved: CONTX.OL 3.3→0.9%; KRAB.OL 3.5→1.3%
+- **GLOBAL / MVO** — moved: SAVE.ST 2.7→0.3%
+- **GLOBAL / MINV** — in: KESKOB.HE · out: DSV.CO
+
 ## 2026-06-09
 
 - **OSLO / MVO** — in: BNOR.OL, DOFG.OL, AKER.OL, HSHP.OL · out: ODL.OL, VAR.OL, NORBT.OL, SMOP.OL, OET.OL, WAWI.OL · moved: KIT.OL 9.6→23.0%; HAUTO.OL 13.5→20.7%; DVD.OL 7.3→13.3%
