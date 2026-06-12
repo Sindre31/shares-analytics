@@ -1,5 +1,18 @@
 # Model book changes
 
+## 2026-06-12
+
+- **OSLO / BL** — in: HAUTO.OL · out: AKAST.OL
+- **GLOBAL / MVO** — in: SAVE.ST · moved: TELIA1.HE 9.7→18.9%; GOOGL 4.2→1.9%
+- **GLOBAL / CAPM** — in: PLTR
+- **GLOBAL / BL** — in: TTALO.HE, SAVE.ST, PLTR, ERIC-B.ST, FIA1S.HE, TRMD-A.CO · out: TSLA · moved: AZN.ST 4.3→0.6%; SHB-A.ST 3.4→0.9%
+- **GLOBAL / RP** — in: TTALO.HE, HM-B.ST, SAVE.ST, ORNBV.HE, ERIC-B.ST, NIBE-B.ST, GN.CO, PLTR · moved: XEON.DE 30.5→28.4%
+- **GLOBAL / MINV** — in: TTALO.HE, SAVE.ST, PLTR, NOKIA.HE, DSV.CO · out: KESKOB.HE, TSLA, FORTUM.HE · moved: UPM.HE 3.0→7.6%; AZN.ST 9.8→6.7%; EUNL.DE 6.7→4.5%
+- **GLOBAL / FF5** — in: GN.CO, TTALO.HE, ORNBV.HE, NIBE-B.ST, SAVE.ST, ERIC-B.ST, HM-B.ST, PLTR
+- **GLOBAL / EQW** — in: ORNBV.HE, PLTR, SAVE.ST, GN.CO, ERIC-B.ST, HM-B.ST, TTALO.HE, NIBE-B.ST
+- **GLOBAL / MOM** — in: NKT.CO · moved: AMD 27.6→30.0%
+- **GLOBAL / HRP** — in: HM-B.ST, TTALO.HE, SAVE.ST, ORNBV.HE, ERIC-B.ST, GN.CO, NIBE-B.ST
+
 ## 2026-06-11
 
 - **GLOBAL / MVO** — moved: TELIA1.HE 18.1→9.7%; AAPL 24.1→20.5%
