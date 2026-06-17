@@ -1,5 +1,18 @@
 # Model book changes
 
+## 2026-06-17
+
+- **OSLO / CAPM** — out: FRO.OL
+- **OSLO / BL** — in: AKAST.OL, DNO.OL · out: BORR.OL · moved: DNB.OL 3.6→5.7%
+- **OSLO / RP** — in: MGN.OL, MEDI.OL, MVW.OL · out: IWS.OL, FRO.OL · moved: XEON.DE 6.4→8.6%
+- **OSLO / MINV** — in: MVW.OL, AUSS.OL, HAUTO.OL, GJF.OL, CLOUD.OL, CAPSL.OL, ATEA.OL, DFENS.OL · out: FRO.OL, DSRT.OL, KRAB.OL, EQVA.OL, GRONG.OL · moved: EUNH.DE 11.1→16.7%; BIEN.OL 6.0→0.6%; BAKKA.OL 7.2→3.4%
+- **OSLO / FF5** — in: MEDI.OL, MVW.OL · out: IWS.OL, DSRT.OL
+- **OSLO / EQW** — in: MVW.OL, MGN.OL, MEDI.OL · out: DSRT.OL, FRO.OL, IWS.OL
+- **OSLO / MOM** — in: KIT.OL · out: FRO.OL
+- **OSLO / HRP** — in: MGN.OL, MEDI.OL · out: DSRT.OL
+- **GLOBAL / MVO** — moved: AAPL 19.6→23.0%; GOOGL 0.5→3.4%; TSM 16.5→13.6%
+- **GLOBAL / MINV** — out: DSV.CO
+
 ## 2026-06-16
 
 - **OSLO / MVO** — in: BNOR.OL, DOFG.OL, KID.OL, BIEN.OL · out: ODL.OL, VAR.OL, NORBT.OL, SMOP.OL, OET.OL, WAWI.OL, ZAP.OL · moved: KIT.OL 10.1→23.9%; HAUTO.OL 12.8→21.4%; DVD.OL 8.5→14.9%
