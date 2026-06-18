@@ -1,5 +1,16 @@
 # Model book changes
 
+## 2026-06-18
+
+- **OSLO / CAPM** — in: FRO.OL
+- **OSLO / BL** — in: ADS.OL, BORR.OL · out: AKAST.OL
+- **OSLO / RP** — in: AQUA.OL, IWS.OL, FRO.OL · out: ABL.OL, MGN.OL, MEDI.OL, MVW.OL
+- **OSLO / MINV** — in: FRO.OL, DSRT.OL, KRAB.OL, EQVA.OL, DNB.OL, 5PG.OL · out: MVW.OL, HAUTO.OL, CLOUD.OL, CAPSL.OL, ATEA.OL, DFENS.OL · moved: EUNH.DE 16.7→11.2%; BIEN.OL 0.6→5.4%; BNOR.OL 5.3→1.2%
+- **OSLO / FF5** — in: AQUA.OL, IWS.OL, DSRT.OL · out: MEDI.OL, ABL.OL, MVW.OL
+- **OSLO / EQW** — in: AQUA.OL, DSRT.OL, FRO.OL, IWS.OL · out: ABL.OL, MVW.OL, MGN.OL, MEDI.OL
+- **OSLO / MOM** — in: FRO.OL · out: KIT.OL
+- **OSLO / HRP** — in: AQUA.OL, DSRT.OL · out: MGN.OL, MEDI.OL
+
 ## 2026-06-17
 
 - **OSLO / CAPM** — out: FRO.OL
