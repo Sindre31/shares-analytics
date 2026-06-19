@@ -1,5 +1,10 @@
 # Model book changes
 
+## 2026-06-19
+
+- **OSLO / MINV** — in: INSTA.OL
+- **GLOBAL / MINV** — in: FIA1S.HE
+
 ## 2026-06-18
 
 - **OSLO / CAPM** — in: FRO.OL
