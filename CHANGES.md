@@ -1,5 +1,11 @@
 # Model book changes
 
+## 2026-06-24
+
+- **OSLO / MVO** — moved: DOFG.OL 8.2→5.3%; BIEN.OL 3.8→1.0%; HSHP.OL 1.0→3.2%
+- **OSLO / MINV** — in: INSTA.OL
+- **GLOBAL / MVO** — moved: SAVE.ST 3.6→7.7%
+
 ## 2026-06-23
 
 - **OSLO / MVO** — in: BNOR.OL, DOFG.OL, KID.OL, BIEN.OL, HSHP.OL · out: ODL.OL, NORBT.OL, SMOP.OL, OET.OL, PLT.OL, VAR.OL · moved: KIT.OL 6.6→24.6%; KOG.OL 19.8→9.7%; DVD.OL 9.7→15.1%
