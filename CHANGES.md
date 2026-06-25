@@ -1,5 +1,11 @@
 # Model book changes
 
+## 2026-06-25
+
+- **OSLO / MINV** — in: AUSS.OL · out: BRG.OL
+- **GLOBAL / MVO** — moved: RHM.DE 16.6→13.9%
+- **GLOBAL / MINV** — in: TRMD-A.CO
+
 ## 2026-06-24
 
 - **OSLO / MVO** — moved: DOFG.OL 8.2→5.3%; BIEN.OL 3.8→1.0%; HSHP.OL 1.0→3.2%
