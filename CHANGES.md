@@ -1,5 +1,13 @@
 # Model book changes
 
+## 2026-06-26
+
+- **OSLO / BL** — out: FRO.OL
+- **OSLO / MINV** — in: GRONG.OL · out: KRAB.OL
+- **GLOBAL / MVO** — moved: AAPL 21.5→16.4%; SAVE.ST 9.7→12.8%
+- **GLOBAL / BL** — in: SAAB-B.ST
+- **GLOBAL / MINV** — in: DSV.CO · out: TRMD-A.CO
+
 ## 2026-06-25
 
 - **OSLO / MINV** — in: AUSS.OL · out: BRG.OL
