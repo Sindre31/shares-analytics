@@ -1,5 +1,16 @@
 # Model book changes
 
+## 2026-07-02
+
+- **OSLO / MVO** — moved: DVD.OL 17.6→13.4%; DOFG.OL 7.6→10.1%; BNOR.OL 8.5→10.6%
+- **OSLO / BL** — in: DNO.OL · out: BORR.OL, AUSS.OL, AKAST.OL · moved: EQNR.OL 6.5→2.7%; AKRBP.OL 13.0→16.4%; DNB.OL 4.1→6.7%
+- **OSLO / MINV** — in: KRAB.OL
+- **OSLO / MOM** — in: 5PG.OL, AKSO.OL · out: AUTO.OL, AKBM.OL · moved: FRO.OL 13.1→17.2%; HAV.OL 19.3→16.2%; HSHP.OL 21.9→18.8%
+- **GLOBAL / MVO** — moved: TSM 18.3→15.9%; NVDA 4.6→6.8%
+- **GLOBAL / MINV** — in: ORNBV.HE, NIBE-B.ST · out: KO · moved: UPM.HE 6.5→2.5%
+- **GLOBAL / MOM** — in: TSM, FIA1S.HE · out: GOOGL, NKT.CO · moved: NOKIA.HE 20.0→29.2%; TELIA1.HE 17.2→11.1%; NESTE.HE 13.9→11.2%
+- **GLOBAL / VAL** — moved: TRMD-A.CO 16.6→19.1%
+
 ## 2026-07-01
 
 - **OSLO / MVO** — in: DVD.OL, BNOR.OL · out: NORBT.OL, ODL.OL, OET.OL, SMOP.OL, PROT.OL, ELMRA.OL, AKER.OL, PLT.OL · moved: KIT.OL 6.7→24.7%; HAUTO.OL 16.6→23.2%; KID.OL 2.7→8.1%
