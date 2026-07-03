@@ -1,5 +1,18 @@
 # Model book changes
 
+## 2026-07-03
+
+- **OSLO / MVO** — moved: HSHP.OL 0.3→3.1%; DOFG.OL 10.1→7.9%
+- **OSLO / BL** — in: AKAST.OL
+- **OSLO / RP** — in: MVW.OL
+- **OSLO / MINV** — in: MVW.OL, ATEA.OL, HSPG.OL, AASB.OL · out: AKVA.OL, DSRT.OL, INSTA.OL, BRG.OL, CONTX.OL, EQVA.OL, KRAB.OL · moved: BALT.OL 6.1→8.2%
+- **OSLO / FF5** — in: MVW.OL · out: DSRT.OL
+- **OSLO / EQW** — in: MVW.OL · out: DSRT.OL
+- **OSLO / VAL** — moved: GSF.OL 10.1→12.3%
+- **OSLO / HRP** — out: DSRT.OL
+- **GLOBAL / MVO** — moved: AAPL 18.2→23.1%; TELIA1.HE 17.9→15.8%; TSLA 9.6→7.6%
+- **GLOBAL / MINV** — in: TSM · out: NIBE-B.ST
+
 ## 2026-07-02
 
 - **OSLO / MVO** — moved: DVD.OL 17.6→13.4%; DOFG.OL 7.6→10.1%; BNOR.OL 8.5→10.6%
