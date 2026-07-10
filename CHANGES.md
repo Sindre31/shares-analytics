@@ -1,5 +1,11 @@
 # Model book changes
 
+## 2026-07-10
+
+- **OSLO / MVO** — moved: BNOR.OL 11.0→15.8%; DOFG.OL 8.1→4.7%
+- **GLOBAL / BL** — out: UPM.HE
+- **GLOBAL / VAL** — moved: TRMD-A.CO 16.2→14.0%
+
 ## 2026-07-09
 
 - **OSLO / MVO** — in: BNOR.OL, DOFG.OL, KID.OL, HSHP.OL · out: ODL.OL, SMOP.OL, NORBT.OL, OET.OL, PROT.OL, PLT.OL, WAWI.OL · moved: KIT.OL 1.8→22.8%; KOG.OL 20.8→11.3%; HAUTO.OL 14.2→21.4%
