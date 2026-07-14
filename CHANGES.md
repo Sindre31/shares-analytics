@@ -1,5 +1,16 @@
 # Model book changes
 
+## 2026-07-14
+
+- **OSLO / MVO** — out: DVD.OL · moved: DOFG.OL 0.5→9.0%; HAUTO.OL 13.8→11.6%
+- **OSLO / BL** — in: AKAST.OL · out: DVD.OL
+- **OSLO / RP** — in: MULTI.OL, AKAST.OL, SALME.OL, KCC.OL, PHO.OL · out: ARCH.OL, ODFB.OL, DVD.OL, MEDI.OL
+- **OSLO / MINV** — in: MULTI.OL · out: ODFB.OL
+- **OSLO / FF5** — in: AKAST.OL, SALME.OL, PHO.OL, KCC.OL, MULTI.OL · out: DVD.OL, ODFB.OL, DFENS.OL, ARCH.OL, MEDI.OL · moved: VAR.OL 20.5→24.9%
+- **OSLO / EQW** — in: KCC.OL, AKAST.OL, MULTI.OL, SALME.OL, PHO.OL · out: DVD.OL, DFENS.OL, ARCH.OL, ODFB.OL, MEDI.OL
+- **OSLO / HRP** — in: PHO.OL, SALME.OL · out: MEDI.OL
+- **GLOBAL / MVO** — moved: AAPL 22.6→25.0%
+
 ## 2026-07-11
 
 - **OSLO / MVO** — in: ODL.OL, NORBT.OL, SMOP.OL, OET.OL, PROT.OL, WAWI.OL, PLT.OL, VAR.OL · out: BNOR.OL, KID.OL, HSHP.OL · moved: KIT.OL 21.6→2.3%; KOG.OL 11.4→20.0%; DVD.OL 13.7→6.2%
