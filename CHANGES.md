@@ -1,5 +1,22 @@
 # Model book changes
 
+## 2026-07-16
+
+- **OSLO / MVO** — moved: VAR.OL 4.6→6.9%
+- **OSLO / BL** — out: MAS.OL
+- **OSLO / RP** — in: PARB.OL, SALME.OL, BWO.OL · out: ODFB.OL, MAS.OL, NOL.OL
+- **OSLO / MINV** — out: ODFB.OL
+- **OSLO / FF5** — in: NOM.OL, BWO.OL, SALME.OL, PARB.OL · out: NOL.OL, ODFB.OL, DFENS.OL, MAS.OL
+- **OSLO / EQW** — in: BWO.OL, SALME.OL, NOM.OL, PARB.OL · out: MAS.OL, NOL.OL, DFENS.OL, ODFB.OL
+- **OSLO / VAL** — moved: SPOG.OL 18.4→15.1%
+- **OSLO / HRP** — in: SALME.OL, NOM.OL, PARB.OL · out: MAS.OL
+- **GLOBAL / CAPM** — in: MU
+- **GLOBAL / RP** — out: NIBE-B.ST
+- **GLOBAL / FF5** — in: MU · out: NIBE-B.ST
+- **GLOBAL / EQW** — in: MU · out: NIBE-B.ST
+- **GLOBAL / MOM** — in: MU · out: FIA1S.HE · moved: AMD 29.6→10.5%; NOKIA.HE 29.2→10.4%; NESTE.HE 11.2→4.0%
+- **GLOBAL / HRP** — out: NIBE-B.ST
+
 ## 2026-07-15
 
 - **OSLO / MVO** — in: DVD.OL, HSHP.OL · moved: DOFG.OL 9.0→2.8%; KIT.OL 0.9→5.4%; VAR.OL 0.4→4.6%
