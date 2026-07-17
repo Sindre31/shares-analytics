@@ -1,5 +1,17 @@
 # Model book changes
 
+## 2026-07-17
+
+- **OSLO / CAPM** — out: ORK.OL
+- **OSLO / BL** — out: WAWI.OL
+- **OSLO / RP** — in: OTL.OL, AKBM.OL, BEWI.OL, BWE.OL · out: SPOG.OL, BONHR.OL, SALME.OL, ARCH.OL, PHO.OL, MEDI.OL
+- **OSLO / MINV** — in: QEC.OL, INSTA.OL, ABG.OL, TGS.OL · out: AKRBP.OL, SPOG.OL, SNI.OL, BAKKA.OL, NAS.OL, NEL.OL, OKEA.OL, ODF.OL · moved: EUNL.DE 5.7→1.1%; BNOR.OL 3.5→7.6%; EUNH.DE 20.0→16.1%
+- **OSLO / FF5** — in: BEWI.OL, OTL.OL, DFENS.OL, QEC.OL, BWE.OL, NTI.OL · out: SPOG.OL, NOM.OL, SALME.OL, PHO.OL, ARCH.OL, BONHR.OL, MEDI.OL · moved: VAR.OL 19.1→24.3%; ORK.OL 0.2→2.5%
+- **OSLO / EQW** — in: AKBM.OL, BWE.OL, OTL.OL, QEC.OL, DFENS.OL, NTI.OL, BEWI.OL · out: BONHR.OL, SPOG.OL, MEDI.OL, SALME.OL, NOM.OL, ARCH.OL, PHO.OL
+- **OSLO / VAL** — in: WWI.OL · out: SPOG.OL · moved: VAR.OL 23.2→26.6%
+- **OSLO / HRP** — in: BEWI.OL, AKBM.OL · out: PHO.OL, MEDI.OL, SALME.OL, SPOG.OL, NOM.OL · moved: ORK.OL 1.3→4.4%
+- **GLOBAL / MINV** — in: AAPL, TRMD-A.CO
+
 ## 2026-07-16
 
 - **OSLO / MVO** — moved: VAR.OL 4.6→6.9%
