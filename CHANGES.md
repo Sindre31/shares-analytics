@@ -1,5 +1,21 @@
 # Model book changes
 
+## 2026-07-18
+
+- **OSLO / MVO** — in: BNOR.OL, KID.OL · out: PROT.OL · moved: DOFG.OL 4.0→0.4%
+- **OSLO / CAPM** — in: ORK.OL · out: TEL.OL, GJF.OL, FRO.OL
+- **OSLO / BL** — in: GOD.OL · out: HAUTO.OL, DVD.OL · moved: DNB.OL 1.5→5.0%; VAR.OL 2.8→5.5%; EUNL.DE 0.5→3.3%
+- **OSLO / RP** — in: CLOUD.OL, GOD.OL, ARCH.OL, ACR.OL, BORR.OL · out: INSTA.OL, WWIB.OL, BWO.OL
+- **OSLO / MINV** — in: AKRBP.OL, BAKKA.OL, CLOUD.OL, ODF.OL, NAS.OL, NEL.OL, SNI.OL · out: QEC.OL, INSTA.OL, ABG.OL, AKSO.OL, TGS.OL, AKER.OL · moved: ORK.OL 0.4→5.8%; EUNL.DE 1.1→6.2%; VEI.OL 8.5→3.6%
+- **OSLO / FF5** — in: ACR.OL, GOD.OL, CLOUD.OL, ARCH.OL, BORR.OL · out: BWO.OL, WWIB.OL, QEC.OL, INSTA.OL, NTI.OL · moved: VAR.OL 24.3→20.4%; ORK.OL 2.5→0.2%
+- **OSLO / EQW** — in: GOD.OL, ARCH.OL, ACR.OL, BORR.OL, CLOUD.OL · out: BWO.OL, WWIB.OL, QEC.OL, INSTA.OL, NTI.OL
+- **OSLO / VAL** — in: ACR.OL · out: WWIB.OL · moved: VAR.OL 26.6→20.4%; GSF.OL 21.7→17.4%
+- **OSLO / HRP** — in: CLOUD.OL · out: INSTA.OL · moved: VEI.OL 0.7→4.3%; ORK.OL 4.4→1.3%; ABG.OL 0.9→3.9%
+- **GLOBAL / CAPM** — out: MU, AMD, AZN.ST
+- **GLOBAL / BL** — out: NOKIA.HE
+- **GLOBAL / FF5** — moved: INVE-B.ST 1.9→5.4%; MU 1.1→3.8%
+- **GLOBAL / VAL** — moved: INVE-B.ST 13.8→24.5%; ZEAL.CO 41.8→33.9%
+
 ## 2026-07-17
 
 - **OSLO / CAPM** — out: ORK.OL
