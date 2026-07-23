@@ -1,5 +1,20 @@
 # Model book changes
 
+## 2026-07-23
+
+- **OSLO / MVO** — out: DVD.OL, KID.OL, BNOR.OL · moved: VAR.OL 6.2→14.7%; HAUTO.OL 11.4→7.1%; KIT.OL 9.5→12.7%
+- **OSLO / CAPM** — in: GJF.OL, ORK.OL, FRO.OL
+- **OSLO / BL** — in: AUSS.OL, AKAST.OL, WAWI.OL · out: EUNL.DE, YAR.OL, PLT.OL · moved: FRO.OL 0.8→3.9%; SALM.OL 2.9→0.6%
+- **OSLO / RP** — in: MORG.OL, AKAST.OL, ENVIP.OL, ACR.OL · out: CLOUD.OL, AFK.OL, DVD.OL
+- **OSLO / MINV** — in: BOUV.OL, ODFB.OL, SMOP.OL, AKSO.OL, ENDUR.OL · out: CLOUD.OL, INSTA.OL, AKER.OL, DFENS.OL, STB.OL · moved: TEL.OL 4.6→7.6%; ORK.OL 6.1→3.6%; VEI.OL 3.6→5.9%
+- **OSLO / FF5** — in: ACR.OL, MORG.OL, AKAST.OL, ENVIP.OL · out: DVD.OL, CLOUD.OL, DFENS.OL
+- **OSLO / EQW** — in: ENVIP.OL, ACR.OL, MORG.OL, AKAST.OL · out: DVD.OL, CLOUD.OL, AFK.OL, DFENS.OL
+- **OSLO / VAL** — in: ACR.OL · out: SOFF.OL · moved: AKER.OL 18.0→13.5%; SEA1.OL 17.3→12.9%; WWIB.OL 11.7→7.7%
+- **OSLO / HRP** — in: MORG.OL · out: CLOUD.OL
+- **GLOBAL / CAPM** — in: MU, AMD, KO, AZN.ST
+- **GLOBAL / BL** — in: NOKIA.HE
+- **GLOBAL / FF5** — moved: INVE-B.ST 5.1→2.1%; MU 3.9→1.1%
+
 ## 2026-07-22
 
 - **OSLO / MVO** — in: DVD.OL, BNOR.OL · moved: DOFG.OL 7.0→1.8%; PROT.OL 4.1→0.6%; KIT.OL 6.3→9.5%
