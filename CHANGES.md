@@ -1,5 +1,17 @@
 # Model book changes
 
+## 2026-07-25
+
+- **OSLO / BL** — in: BWLPG.OL, MOWI.OL, EUNL.DE, BNOR.OL, GSF.OL · out: ELIMP.OL, EPR.OL · moved: SALM.OL 3.9→1.3%
+- **OSLO / RP** — in: INSTA.OL, WWIB.OL, MEDI.OL · out: MORG.OL, AFG.OL, BONHR.OL
+- **OSLO / MINV** — in: TEKNA.OL · out: FRO.OL, ENDUR.OL
+- **OSLO / FF5** — in: NOM.OL, WWIB.OL, INSTA.OL, MEDI.OL, TEKNA.OL · out: MORG.OL, ELIMP.OL, BONHR.OL, BORR.OL, AFG.OL
+- **OSLO / EQW** — in: INSTA.OL, WWIB.OL, TEKNA.OL, NOM.OL, MEDI.OL · out: MORG.OL, ELIMP.OL, AFG.OL, BORR.OL, BONHR.OL
+- **OSLO / VAL** — in: WWIB.OL · out: MORG.OL
+- **OSLO / HRP** — in: MEDI.OL, INSTA.OL, NOM.OL, WWIB.OL · out: ELIMP.OL, MORG.OL, AFG.OL, BONHR.OL · moved: ENTRA.OL 6.2→4.0%
+- **GLOBAL / BL** — out: UPM.HE
+- **GLOBAL / MINV** — in: TRMD-A.CO
+
 ## 2026-07-24
 
 - **OSLO / MVO** — out: DOFG.OL, PROT.OL · moved: VAR.OL 14.7→17.9%; KIT.OL 12.7→14.9%
