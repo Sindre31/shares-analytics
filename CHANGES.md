@@ -1,5 +1,18 @@
 # Model book changes
 
+## 2026-07-28
+
+- **OSLO / MVO** — in: DVD.OL · moved: ODL.OL 14.0→11.0%; VAR.OL 18.0→15.4%; WAWI.OL 12.1→9.7%
+- **OSLO / CAPM** — out: GJF.OL, FRO.OL
+- **OSLO / BL** — in: ELIMP.OL, EPR.OL · out: BWLPG.OL, BNOR.OL, GSF.OL · moved: GJF.OL 5.9→1.6%; SALM.OL 1.3→5.0%; MPCC.OL 2.6→4.9%
+- **OSLO / RP** — in: ABG.OL, BONHR.OL, DVD.OL · out: ARCH.OL, KOA.OL, MEDI.OL
+- **OSLO / FF5** — in: DVD.OL, ABG.OL, BONHR.OL, ELIMP.OL, NTI.OL · out: NOM.OL, NRC.OL, KOA.OL, ARCH.OL, MEDI.OL
+- **OSLO / EQW** — in: NTI.OL, BONHR.OL, ELIMP.OL, DVD.OL, ABG.OL · out: NRC.OL, ARCH.OL, NOM.OL, MEDI.OL, KOA.OL
+- **OSLO / HRP** — in: ELIMP.OL, ABG.OL, BONHR.OL · out: MEDI.OL, KOA.OL, NOM.OL · moved: ENTRA.OL 4.0→6.3%
+- **GLOBAL / CAPM** — out: MU, AMD, KO, AZN.ST
+- **GLOBAL / BL** — in: UPM.HE, ORNBV.HE · out: NOKIA.HE
+- **GLOBAL / FF5** — moved: INVE-B.ST 2.0→5.0%; MU 1.0→3.9%
+
 ## 2026-07-25
 
 - **OSLO / BL** — in: BWLPG.OL, MOWI.OL, EUNL.DE, BNOR.OL, GSF.OL · out: ELIMP.OL, EPR.OL · moved: SALM.OL 3.9→1.3%
