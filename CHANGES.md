@@ -1,5 +1,19 @@
 # Model book changes
 
+## 2026-07-29
+
+- **OSLO / MVO** — moved: VAR.OL 15.4→12.0%; HSHP.OL 3.4→0.9%
+- **OSLO / CAPM** — in: GJF.OL, FRO.OL
+- **OSLO / BL** — in: MAS.OL, DVD.OL, BWLPG.OL, ENH.OL · moved: DNB.OL 4.6→2.0%; SALM.OL 5.0→2.5%; GJF.OL 1.6→3.9%
+- **OSLO / RP** — in: AFG.OL, GOD.OL, MAS.OL, BORR.OL · out: ABG.OL, SALME.OL, NORAM.OL, OTL.OL
+- **OSLO / FF5** — in: GOD.OL, DFENS.OL, BORR.OL, MAS.OL, AFG.OL · out: SALME.OL, ABG.OL, OTL.OL, NORAM.OL, NTI.OL
+- **OSLO / EQW** — in: BORR.OL, AFG.OL, DFENS.OL, MAS.OL, GOD.OL · out: NTI.OL, NORAM.OL, SALME.OL, OTL.OL, ABG.OL
+- **OSLO / HRP** — in: MAS.OL, AFG.OL · out: SALME.OL, ABG.OL
+- **GLOBAL / CAPM** — in: MU, AMD, KO, AZN.ST
+- **GLOBAL / BL** — in: NOKIA.HE · out: UPM.HE, ORNBV.HE
+- **GLOBAL / FF5** — moved: INVE-B.ST 5.0→2.0%; MU 3.9→1.1%
+- **GLOBAL / VAL** — in: FIA1S.HE · out: TOKMAN.HE
+
 ## 2026-07-28
 
 - **OSLO / MVO** — in: DVD.OL · moved: ODL.OL 14.0→11.0%; VAR.OL 18.0→15.4%; WAWI.OL 12.1→9.7%
