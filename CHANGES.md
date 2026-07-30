@@ -1,5 +1,15 @@
 # Model book changes
 
+## 2026-07-30
+
+- **OSLO / BL** — out: MAS.OL, SMOP.OL, BWLPG.OL, ENH.OL
+- **OSLO / RP** — in: SALME.OL, NORAM.OL, OTL.OL, ARCH.OL, PHO.OL · out: BONHR.OL, INSTA.OL, GOD.OL, XPLRA.OL, MAS.OL · moved: XEON.DE 17.4→19.5%
+- **OSLO / MINV** — in: NORBT.OL · out: XPLRA.OL, TEKNA.OL · moved: TEL.OL 6.3→9.7%; EUNL.DE 5.1→8.3%; VEI.OL 7.6→5.2%
+- **OSLO / FF5** — in: NRC.OL, SALME.OL, OTL.OL, ARCH.OL, PHO.OL, NORAM.OL · out: GOD.OL, DFENS.OL, BONHR.OL, INSTA.OL, XPLRA.OL, MAS.OL
+- **OSLO / EQW** — in: PHO.OL, OTL.OL, NORAM.OL, NRC.OL, SALME.OL, ARCH.OL · out: INSTA.OL, BONHR.OL, DFENS.OL, MAS.OL, XPLRA.OL, GOD.OL
+- **OSLO / VAL** — moved: SEA1.OL 15.0→17.2%
+- **OSLO / HRP** — in: PHO.OL, SALME.OL · out: XPLRA.OL, INSTA.OL, MAS.OL · moved: ENTRA.OL 6.3→4.2%
+
 ## 2026-07-29
 
 - **OSLO / MVO** — moved: VAR.OL 15.4→12.0%; HSHP.OL 3.4→0.9%
