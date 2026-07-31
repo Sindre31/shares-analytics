@@ -1,5 +1,15 @@
 # Model book changes
 
+## 2026-07-31
+
+- **OSLO / MVO** — in: ZAP.OL · moved: VAR.OL 11.7→13.8%
+- **OSLO / RP** — in: BONHR.OL, CLOUD.OL, KOA.OL, MPCES.OL · out: OTL.OL, ARCH.OL, PNOR.OL
+- **OSLO / MINV** — in: CLOUD.OL · out: SNI.OL · moved: BOUV.OL 3.1→0.3%
+- **OSLO / FF5** — in: MPCES.OL, KOA.OL, CLOUD.OL, BONHR.OL · out: PNOR.OL, OTL.OL, ARCH.OL, TEKNA.OL
+- **OSLO / EQW** — in: KOA.OL, MPCES.OL, CLOUD.OL, BONHR.OL · out: PNOR.OL, OTL.OL, ARCH.OL, TEKNA.OL
+- **OSLO / HRP** — in: CLOUD.OL, MPCES.OL, KOA.OL, BONHR.OL · out: TEKNA.OL
+- **GLOBAL / MVO** — moved: SAVE.ST 10.1→7.6%; TSM 13.9→16.3%
+
 ## 2026-07-30
 
 - **OSLO / BL** — out: MAS.OL, SMOP.OL, BWLPG.OL, ENH.OL
