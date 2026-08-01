@@ -1,5 +1,20 @@
 # Model book changes
 
+## 2026-08-01
+
+- **OSLO / CAPM** — out: GJF.OL, FRO.OL
+- **OSLO / BL** — in: ARCH.OL, ALNG.OL, SMOP.OL, PLT.OL · out: DVD.OL, AUSS.OL, SCATC.OL · moved: FRO.OL 4.4→1.1%; DNB.OL 2.1→5.3%; ELK.OL 3.4→1.3%
+- **OSLO / RP** — in: ARCH.OL, XPLRA.OL, MAS.OL · out: SALME.OL, NORAM.OL, ODF.OL, MPCES.OL, BORR.OL
+- **OSLO / MINV** — in: XPLRA.OL, FRO.OL, MAS.OL, SNI.OL · out: MOWI.OL, NORBT.OL, ODF.OL, NEL.OL · moved: EUNL.DE 8.1→5.4%; TEL.OL 7.7→5.2%
+- **OSLO / FF5** — in: ALNG.OL, NOM.OL, BMA.OL, ARCH.OL, XPLRA.OL, MAS.OL · out: MPCES.OL, NRC.OL, SALME.OL, ODF.OL, NORAM.OL, BORR.OL
+- **OSLO / EQW** — in: ARCH.OL, ALNG.OL, NOM.OL, BMA.OL, MAS.OL, XPLRA.OL · out: MPCES.OL, ODF.OL, BORR.OL, NRC.OL, SALME.OL, NORAM.OL
+- **OSLO / HRP** — in: XPLRA.OL, NOM.OL, MAS.OL · out: MPCES.OL, SALME.OL
+- **GLOBAL / MVO** — moved: SAVE.ST 7.6→10.8%; AAPL 25.0→22.4%
+- **GLOBAL / CAPM** — out: MU, AMD, AZN.ST
+- **GLOBAL / BL** — in: UPM.HE, ORNBV.HE
+- **GLOBAL / FF5** — moved: INVE-B.ST 2.0→5.3%; MU 1.1→4.1%; VOLCAR-B.ST 16.8→13.9%
+- **GLOBAL / VAL** — moved: VOLCAR-B.ST 34.9→32.9%
+
 ## 2026-07-31
 
 - **OSLO / MVO** — in: ZAP.OL · moved: VAR.OL 11.7→13.8%
