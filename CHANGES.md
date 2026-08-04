@@ -1,5 +1,23 @@
 # Model book changes
 
+## 2026-08-04
+
+- **OSLO / MVO** — out: DVD.OL · moved: ODL.OL 11.8→14.5%; OET.OL 6.6→8.8%
+- **OSLO / CAPM** — in: GJF.OL, FRO.OL
+- **OSLO / BL** — out: ARCH.OL, ALNG.OL, SMOP.OL, PLT.OL, MOWI.OL · moved: FRO.OL 1.1→4.6%; GJF.OL 1.8→4.4%; DNB.OL 5.3→2.7%
+- **OSLO / RP** — in: ABG.OL, INSTA.OL, NORAM.OL, ODF.OL, PNOR.OL · out: WWIB.OL, CLOUD.OL, ARCH.OL, DVD.OL, MAS.OL · moved: XEON.DE 18.1→15.1%
+- **OSLO / MINV** — in: QEC.OL, TGS.OL, ENSU.OL, AKER.OL, INSTA.OL, ABG.OL, DFENS.OL, KID.OL · out: CLOUD.OL, AKRBP.OL, NAS.OL, STB.OL, MAS.OL, SNI.OL · moved: VEI.OL 4.4→8.3%; EUNL.DE 5.4→1.6%; TEL.OL 5.2→8.7%
+- **OSLO / FF5** — in: PNOR.OL, ODF.OL, ABG.OL, DFENS.OL, QEC.OL, INSTA.OL, NORAM.OL, ENSU.OL · out: ALNG.OL, DVD.OL, NOM.OL, BMA.OL, CLOUD.OL, WWIB.OL, ARCH.OL, MAS.OL · moved: ACR.OL 6.0→8.3%
+- **OSLO / EQW** — in: ABG.OL, PNOR.OL, NORAM.OL, INSTA.OL, ODF.OL, ENSU.OL, QEC.OL, DFENS.OL · out: WWIB.OL, ARCH.OL, ALNG.OL, NOM.OL, BMA.OL, MAS.OL, DVD.OL, CLOUD.OL
+- **OSLO / VAL** — in: MPCC.OL · out: WWIB.OL · moved: AKER.OL 19.0→15.5%; GSF.OL 14.5→17.8%; SOFF.OL 7.9→10.9%
+- **OSLO / HRP** — in: ABG.OL, INSTA.OL · out: CLOUD.OL, NOM.OL, MAS.OL, WWIB.OL
+- **GLOBAL / CAPM** — in: MU, AMD, AZN.ST
+- **GLOBAL / BL** — out: UPM.HE, ORNBV.HE
+- **GLOBAL / RP** — in: COLO-B.CO · out: HM-B.ST
+- **GLOBAL / FF5** — in: COLO-B.CO · out: HM-B.ST · moved: INVE-B.ST 5.3→2.1%; MU 4.1→1.1%
+- **GLOBAL / EQW** — in: COLO-B.CO · out: HM-B.ST
+- **GLOBAL / HRP** — in: COLO-B.CO · out: HM-B.ST
+
 ## 2026-08-01
 
 - **OSLO / CAPM** — out: GJF.OL, FRO.OL
