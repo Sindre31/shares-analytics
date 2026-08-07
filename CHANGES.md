@@ -1,5 +1,20 @@
 # Model book changes
 
+## 2026-08-07
+
+- **OSLO / MVO** — out: ODL.OL · moved: DOFG.OL 3.0→6.5%; KIT.OL 17.4→14.6%
+- **OSLO / BL** — in: AKER.OL, NSKOG.OL, PLT.OL, MOWI.OL · out: EUNL.DE, BMA.OL · moved: SOFF.OL 3.3→0.7%; OKEA.OL 3.9→1.6%; PEN.OL 3.2→5.3%
+- **OSLO / RP** — in: ABG.OL, OTL.OL, BORR.OL · out: MULTI.OL, BWO.OL, BWE.OL
+- **OSLO / MINV** — in: EPR.OL, GEOS.OL, ENDUR.OL, PROT.OL · out: AKER.OL, MULTI.OL, KID.OL, AKSO.OL
+- **OSLO / FF5** — in: GEOS.OL, OTL.OL, ABG.OL, BORR.OL, NTI.OL · out: NRC.OL, BWO.OL, BMA.OL, BWE.OL, MULTI.OL
+- **OSLO / EQW** — in: GEOS.OL, NTI.OL, BORR.OL, ABG.OL, OTL.OL · out: BWE.OL, NRC.OL, BWO.OL, MULTI.OL, BMA.OL
+- **OSLO / MOM** — in: AKER.OL, NSKOG.OL · out: FRO.OL, OKEA.OL
+- **OSLO / HRP** — in: ABG.OL
+- **GLOBAL / CAPM** — in: AMD
+- **GLOBAL / BL** — out: UPM.HE
+- **GLOBAL / MINV** — in: TRMD-A.CO, PLTR
+- **GLOBAL / VAL** — in: TOKMAN.HE · out: FIA1S.HE
+
 ## 2026-08-06
 
 - **OSLO / BL** — in: SEA1.OL, GJF.OL, BMA.OL · out: NSKOG.OL, DNO.OL, NHY.OL, REACH.OL, DVD.OL, MOWI.OL, NOD.OL, AKER.OL, BRG.OL · moved: YAR.OL 10.6→6.1%; AUSS.OL 4.7→1.1%; OKEA.OL 0.4→3.9%
