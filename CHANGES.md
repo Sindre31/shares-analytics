@@ -1,5 +1,16 @@
 # Model book changes
 
+## 2026-08-08
+
+- **OSLO / MVO** — out: DVD.OL · moved: DOFG.OL 6.5→15.4%; BNOR.OL 5.4→2.1%; KOG.OL 12.7→10.5%
+- **OSLO / BL** — in: OMDA.OL, KCC.OL
+- **OSLO / RP** — in: NORAM.OL, BWO.OL, MEDI.OL, BWE.OL · out: ABG.OL, AKAST.OL, ODF.OL, DVD.OL, PNOR.OL
+- **OSLO / MINV** — in: AKSO.OL · out: GEOS.OL
+- **OSLO / FF5** — in: BWO.OL, DFENS.OL, NORAM.OL, MEDI.OL, BWE.OL, OMDA.OL · out: DVD.OL, AKAST.OL, GEOS.OL, PNOR.OL, ODF.OL, ABG.OL
+- **OSLO / EQW** — in: BWO.OL, MEDI.OL, DFENS.OL, OMDA.OL, NORAM.OL, BWE.OL · out: GEOS.OL, ODF.OL, ABG.OL, PNOR.OL, AKAST.OL, DVD.OL
+- **OSLO / VAL** — moved: SEA1.OL 16.5→14.2%
+- **OSLO / HRP** — in: MEDI.OL, OMDA.OL · out: ABG.OL
+
 ## 2026-08-07
 
 - **OSLO / MVO** — out: ODL.OL · moved: DOFG.OL 3.0→6.5%; KIT.OL 17.4→14.6%
