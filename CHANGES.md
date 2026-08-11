@@ -1,5 +1,22 @@
 # Model book changes
 
+## 2026-08-11
+
+- **OSLO / MVO** — moved: HAUTO.OL 6.5→4.3%
+- **OSLO / BL** — in: MAS.OL, SCATC.OL · out: ELK.OL, OMDA.OL, SOFF.OL, KCC.OL
+- **OSLO / RP** — in: INSTA.OL, AKAST.OL, ODF.OL, PNOR.OL, MAS.OL · out: AFG.OL, SALME.OL, KCC.OL, OTL.OL
+- **OSLO / MINV** — in: ODF.OL, MAS.OL
+- **OSLO / FF5** — in: AKAST.OL, NRC.OL, ODF.OL, PNOR.OL, INSTA.OL, MAS.OL · out: SALME.OL, OTL.OL, DFENS.OL, KCC.OL, AFG.OL, OMDA.OL · moved: NOM.OL 4.1→12.6%; ACR.OL 7.6→5.1%
+- **OSLO / EQW** — in: INSTA.OL, MAS.OL, AKAST.OL, ODF.OL, PNOR.OL, NRC.OL · out: AFG.OL, KCC.OL, OTL.OL, DFENS.OL, SALME.OL, OMDA.OL
+- **OSLO / VAL** — moved: AKER.OL 12.5→9.4%
+- **OSLO / HRP** — in: INSTA.OL, MAS.OL · out: OMDA.OL, SALME.OL, AFG.OL
+- **GLOBAL / MVO** — in: PLTR
+- **GLOBAL / CAPM** — in: ABB.ST
+- **GLOBAL / RP** — in: ABB.ST · out: COLO-B.CO
+- **GLOBAL / FF5** — in: ABB.ST · out: COLO-B.CO
+- **GLOBAL / EQW** — in: ABB.ST · out: COLO-B.CO
+- **GLOBAL / HRP** — in: ABB.ST · out: COLO-B.CO
+
 ## 2026-08-08
 
 - **OSLO / MVO** — out: DVD.OL · moved: DOFG.OL 6.5→15.4%; BNOR.OL 5.4→2.1%; KOG.OL 12.7→10.5%
