@@ -1,5 +1,23 @@
 # Model book changes
 
+## 2026-08-12
+
+- **OSLO / MVO** — in: DVD.OL · out: PLT.OL · moved: DOFG.OL 14.4→7.2%; BNOR.OL 1.4→3.8%; NORBT.OL 13.2→11.1%
+- **OSLO / BL** — in: ELK.OL, SOFF.OL, KCC.OL · out: MAS.OL, SCATC.OL
+- **OSLO / RP** — in: AFG.OL, SALME.OL, KCC.OL, OTL.OL, DVD.OL · out: BWO.OL, PHO.OL, ELMRA.OL, XPLRA.OL, MAS.OL
+- **OSLO / MINV** — in: OET.OL, NRC.OL, ACR.OL · out: ELMRA.OL, AKRBP.OL, XPLRA.OL, PROT.OL, OKEA.OL, NAPA.OL, NEL.OL, FRO.OL, NORBT.OL, SMOP.OL, ODF.OL, MAS.OL · moved: VAR.OL 3.8→8.5%; ATEA.OL 2.1→6.3%; EUNL.DE 7.2→11.2%
+- **OSLO / FF5** — in: DVD.OL, SALME.OL, OTL.OL, KCC.OL, AFG.OL · out: BWO.OL, XPLRA.OL, PHO.OL, ELMRA.OL, MAS.OL
+- **OSLO / EQW** — in: SALME.OL, AFG.OL, KCC.OL, OTL.OL, DVD.OL · out: MAS.OL, XPLRA.OL, PHO.OL, ELMRA.OL, BWO.OL
+- **OSLO / MOM** — in: FRO.OL · out: NSKOG.OL
+- **OSLO / VAL** — moved: ACR.OL 37.4→34.9%
+- **OSLO / HRP** — in: SALME.OL, AFG.OL · out: PHO.OL, ELMRA.OL, XPLRA.OL, MAS.OL
+- **GLOBAL / CAPM** — out: ABB.ST
+- **GLOBAL / RP** — in: COLO-B.CO · out: ABB.ST
+- **GLOBAL / FF5** — in: COLO-B.CO · out: ABB.ST
+- **GLOBAL / EQW** — in: COLO-B.CO · out: ABB.ST
+- **GLOBAL / VAL** — in: FIA1S.HE · out: TOKMAN.HE · moved: VOLCAR-B.ST 35.8→33.4%; SHB-A.ST 6.7→8.8%
+- **GLOBAL / HRP** — in: COLO-B.CO · out: ABB.ST
+
 ## 2026-08-11
 
 - **OSLO / MVO** — moved: HAUTO.OL 6.5→4.3%
