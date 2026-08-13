@@ -1,5 +1,17 @@
 # Model book changes
 
+## 2026-08-13
+
+- **OSLO / MVO** — moved: DOFG.OL 7.2→3.6%; HAUTO.OL 5.8→3.7%
+- **OSLO / BL** — in: TEKNA.OL · out: KID.OL
+- **OSLO / RP** — in: BWO.OL, PHO.OL, ELMRA.OL, XPLRA.OL · out: KID.OL, OTL.OL, PNOR.OL, BWE.OL
+- **OSLO / MINV** — in: ELMRA.OL, XPLRA.OL, OKEA.OL, AKRBP.OL, NAPA.OL, PROT.OL, NEL.OL, NORBT.OL, SMOP.OL, EPR.OL, FRO.OL, TEKNA.OL · out: OET.OL, NRC.OL, ACR.OL · moved: EUNL.DE 11.2→6.6%; VAR.OL 8.5→4.5%; SALM.OL 1.1→4.3%
+- **OSLO / FF5** — in: BWO.OL, PHO.OL, XPLRA.OL, TEKNA.OL, ELMRA.OL · out: NRC.OL, PNOR.OL, OTL.OL, BWE.OL, KID.OL · moved: NOM.OL 13.6→11.5%
+- **OSLO / EQW** — in: TEKNA.OL, BWO.OL, XPLRA.OL, PHO.OL, ELMRA.OL · out: BWE.OL, OTL.OL, NRC.OL, PNOR.OL, KID.OL
+- **OSLO / MOM** — in: NSKOG.OL · out: FRO.OL
+- **OSLO / VAL** — moved: SEA1.OL 16.1→12.5%
+- **OSLO / HRP** — in: PHO.OL, ELMRA.OL, XPLRA.OL · out: KID.OL · moved: ENTRA.OL 4.0→6.0%
+
 ## 2026-08-12
 
 - **OSLO / MVO** — in: DVD.OL · out: PLT.OL · moved: DOFG.OL 14.4→7.2%; BNOR.OL 1.4→3.8%; NORBT.OL 13.2→11.1%
