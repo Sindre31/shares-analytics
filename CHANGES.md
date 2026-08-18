@@ -1,5 +1,23 @@
 # Model book changes
 
+## 2026-08-18
+
+- **OSLO / MVO** — out: HAUTO.OL · moved: DOFG.OL 7.3→4.6%
+- **OSLO / CAPM** — in: GJF.OL, FRO.OL
+- **OSLO / BL** — in: FRO.OL, OKEA.OL · out: AKER.OL, KCC.OL, ARCH.OL · moved: DNB.OL 8.1→5.7%; GJF.OL 3.5→5.8%
+- **OSLO / RP** — in: PARB.OL, INSTA.OL, OTL.OL, BEWI.OL, CAMBI.OL · out: KID.OL, CLOUD.OL, BWO.OL, MGN.OL
+- **OSLO / MINV** — in: SNI.OL, PLT.OL, CAMBI.OL, ENDUR.OL, NEL.OL, EPR.OL, NORBT.OL, AKSO.OL · out: CLOUD.OL, AZT.OL, DFENS.OL · moved: TEL.OL 2.4→6.7%; SALM.OL 0.9→4.7%; BAKKA.OL 3.1→0.4%
+- **OSLO / FF5** — in: BEWI.OL, PARB.OL, OTL.OL, INSTA.OL, CAMBI.OL, NTI.OL · out: BWO.OL, CLOUD.OL, DFENS.OL, AZT.OL, KID.OL, MGN.OL · moved: ACR.OL 6.7→1.0%
+- **OSLO / EQW** — in: NTI.OL, PARB.OL, BEWI.OL, OTL.OL, INSTA.OL, CAMBI.OL · out: KID.OL, DFENS.OL, MGN.OL, CLOUD.OL, BWO.OL, AZT.OL
+- **OSLO / MOM** — in: FRO.OL, OKEA.OL · out: AKER.OL, NSKOG.OL
+- **OSLO / VAL** — in: MPCC.OL · out: ACR.OL · moved: GSF.OL 22.2→30.1%; SEA1.OL 11.1→18.4%; ODF.OL 9.1→13.9%
+- **OSLO / HRP** — in: BEWI.OL, PARB.OL, INSTA.OL · out: CLOUD.OL, MGN.OL, KID.OL, AZT.OL
+- **GLOBAL / MVO** — out: PLTR
+- **GLOBAL / CAPM** — in: MU
+- **GLOBAL / BL** — in: NOVO-B.CO
+- **GLOBAL / FF5** — moved: INVE-B.ST 5.5→2.1%; MU 4.3→1.1%
+- **GLOBAL / VAL** — moved: ZEAL.CO 23.4→5.5%; VOLCAR-B.ST 33.1→41.5%; INVE-B.ST 18.3→25.8%
+
 ## 2026-08-15
 
 - **OSLO / MVO** — in: WAWI.OL, VAR.OL, NORBT.OL, OET.OL, ZAP.OL, SMOP.OL, ODL.OL · out: KID.OL · moved: HAUTO.OL 22.3→0.5%; KIT.OL 25.0→13.9%; BNOR.OL 15.1→4.1%
