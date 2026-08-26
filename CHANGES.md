@@ -1,5 +1,16 @@
 # Model book changes
 
+## 2026-08-26
+
+- **OSLO / MVO** — moved: ODL.OL 8.4→5.3%; DOFG.OL 5.6→8.5%
+- **OSLO / BL** — in: SEA1.OL, OKEA.OL, KCC.OL, SMOP.OL · out: NHY.OL, NOD.OL, ODL.OL, NOL.OL, DNO.OL, STB.OL · moved: YAR.OL 10.6→5.3%; SOFF.OL 5.9→1.0%; VAR.OL 9.4→5.6%
+- **OSLO / RP** — in: ABG.OL, SALME.OL, ARCH.OL, PNOR.OL, SEA1.OL · out: NKR.OL, BEWI.OL, PHO.OL, ACR.OL
+- **OSLO / MINV** — in: BAKKA.OL, SMOP.OL · out: NKR.OL
+- **OSLO / FF5** — in: SEA1.OL, SALME.OL, PNOR.OL, ABG.OL, ARCH.OL · out: BEWI.OL, PHO.OL, ACR.OL, NKR.OL, NTI.OL
+- **OSLO / EQW** — in: SALME.OL, PNOR.OL, ARCH.OL, SEA1.OL, ABG.OL · out: NTI.OL, ACR.OL, BEWI.OL, PHO.OL, NKR.OL
+- **OSLO / VAL** — in: SEA1.OL · out: WWIB.OL · moved: ODFB.OL 14.3→9.4%; ODF.OL 13.3→10.0%; SOFF.OL 18.0→15.0%
+- **OSLO / HRP** — in: SALME.OL, ABG.OL · out: PHO.OL, BEWI.OL · moved: ENTRA.OL 6.1→4.0%
+
 ## 2026-08-25
 
 - **OSLO / MVO** — moved: ODL.OL 3.4→8.4%; DOFG.OL 9.8→5.6%; VAR.OL 18.8→16.4%
