@@ -1,5 +1,10 @@
 # Model book changes
 
+## 2026-08-29
+
+- **OSLO / MVO** — moved: DOFG.OL 4.2→1.9%
+- **OSLO / MINV** — out: ENDUR.OL
+
 ## 2026-08-28
 
 - **OSLO / MVO** — in: DVD.OL · out: AKER.OL · moved: DOFG.OL 8.2→4.2%
